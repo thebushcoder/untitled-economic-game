@@ -165,23 +165,18 @@ namespace VoronoiMap{
 			iter->second->setColour(sf::Color(51, 102, 0));
 		}
 
+		generateWater();
 		// CREATE ELEVATION
 		generateElevation();
 		assignPolyColours();
 	}
 
-	void VoronoiMap::generateElevation(){
+	void VoronoiMap::generateWater(){
 		// center is outside island shape - mark as water
 		for(auto iter = corners.begin(); iter != corners.end(); ++iter){
 			if(!insideLandShape(iter->second->getPoint())){
 				iter->second->setIsWater(true);
-//				iter->second->setElevation(0.0);
 			}
-		}
-
-		//	set map borders elevation to 0.0 + add to flood fill frontier
-
-		for(auto iter = corners.begin(); iter != corners.end(); ++iter){
 			if(iter->second->isMapBorder()){
 				iter->second->setElevation(0.0);
 			}
@@ -189,12 +184,13 @@ namespace VoronoiMap{
 
 		// create water centers - additional ocean + lakes
 		int numWater;
-		float lakeThreshold = 0.2;
+		float lakeThreshold = 0.1;
 		std::queue<Center*> front;
 
 		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
 			numWater = 0;
 			for(auto c : iter->second->getCorners()){
+				// mark border + ocean
 				if(c->isMapBorder()){
 					iter->second->setIsOcean(true);
 					iter->second->setIsBorder(true);
@@ -205,9 +201,12 @@ namespace VoronoiMap{
 					numWater += 1;
 				}
 			}
+			// mark lakes
 			bool flag = (iter->second->isWater() ||
 					numWater >= iter->second->getCorners().size() * lakeThreshold);
 			iter->second->setIsWater(flag);
+
+//			iter->second->setRainfall();
 		}
 
 		while(!front.empty()){
@@ -244,14 +243,18 @@ namespace VoronoiMap{
 			}
 			bool flag = (numOcean >= iter->second->getTouches().size());
 			iter->second->setIsOcean(flag);
+
 			flag = (numOcean > 0) && (numLand > 0);
 			iter->second->setIsCoast(flag);
+
 			flag = iter->second->isMapBorder() ||
 					((numLand != iter->second->getTouches().size()) &&
 							!iter->second->isCoast());
 			iter->second->setIsWater(flag);
 		}
+	}
 
+	void VoronoiMap::generateElevation(){
 		// 	use perlin noise to generate height map
 		FastNoise perlinNoise;
 		perlinNoise.SetSeed(gen());
@@ -259,7 +262,7 @@ namespace VoronoiMap{
 		perlinNoise.SetInterp(FastNoise::Linear);
 		// decrease to create larger patches of similar height
 		// increase for more extreme, rugged patches of mountains
-		perlinNoise.SetFrequency(0.0074);
+		perlinNoise.SetFrequency(0.0070);
 
 		//	set poly/center elevation
 		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
@@ -268,7 +271,7 @@ namespace VoronoiMap{
 			}else{
 				// elevFactor - increase to increase general elevation,
 				// decrease to produce flatter land
-				float elevFactor = 1.0;
+				float elevFactor = 0.9;
 				float e = (elevFactor + perlinNoise.GetNoise(iter->second->getPoint().x, iter->second->getPoint().y)) / 2;
 				iter->second->setElevation(e);
 			}
@@ -281,6 +284,50 @@ namespace VoronoiMap{
 			}
 			e = e / iter->second->getTouches().size();
 			iter->second->setElevation(e);
+		}
+
+		// fill sinks - erodes terrain to make rivers look more natural
+		// Ref: (function fillSinks(h, epsilon)) https://github.com/mewo2/terrain/blob/master/terrain.js
+		/*
+		 *  There's an obvious problem when we reach gridpoints which are lower than all
+		 *  of their neighbours. Do we route the water back uphill? This will probably
+		 *  lead to cycles in the water system, which are trouble. Instead, we want to
+		 *  fill in these gaps (often called sinks or depressions), so that the water
+		 *  always runs downhill all the way to the edge.
+		 */
+		std::map<std::pair<float, float>, float> newHeightmap;
+		std::queue<CellCorner*> front;
+
+		for(auto iter = corners.begin(); iter != corners.end(); ++iter){
+			if(iter->second->isMapBorder()){
+				newHeightmap[{iter->second->getPoint().x, iter->second->getPoint().y}]
+							 = 0;
+				front.push(iter->second.get());
+			}else{
+				newHeightmap[{iter->second->getPoint().x, iter->second->getPoint().y}]
+							 = 9999;
+			}
+		}
+
+		float epsilon = 0.0125;
+		while(!front.empty()){
+			CellCorner* c = front.front();
+			front.pop();
+
+			for(auto n : c->getAdjacent()){
+				if(c->getElevation() >=
+						newHeightmap[{n->getPoint().x, n->getPoint().y}] + epsilon){
+					newHeightmap[{c->getPoint().x, c->getPoint().y}] = c->getElevation();
+					front.push(n.get());
+					break;
+				}
+				float k = newHeightmap[{n->getPoint().x, n->getPoint().y}] + epsilon;
+				if((newHeightmap[{n->getPoint().x, n->getPoint().y}] > k) &&
+						(k > c->getElevation())){
+					newHeightmap[{c->getPoint().x, c->getPoint().y}] = k;
+					front.push(n.get());
+				}
+			}
 		}
 
 		//	calc downslopes: At every corner point, we point to the
@@ -326,43 +373,60 @@ namespace VoronoiMap{
 			c->setWaterShedSize(shedSize);
 		}
 
-		int riverChance = (mapW + mapH) / 8;
-		std::uniform_int_distribution<> cornerRange(0, corners.size() - 1);
-		for(int i = 0; i < riverChance; ++i){
-			auto randIter = corners.begin();
-			std::advance(randIter, cornerRange(gen));
-			CellCorner* c = randIter->second.get();
-
-			// river conditions/requirements
-			if(c->isOcean() || c->getElevation() < 0.2 || c->getElevation() > 0.9){
-				continue;
-			}
-
-			while(!c->isCoast()){
-				if(c == c->getDownSlope().get()) break;
-
-				CellEdge* edge;
-				for(auto e : c->getProtrudes()){
-					if(e->getVoronoiEdge().first.get() == c || e->getVoronoiEdge().second.get() == c){
-						edge = e.get();
-					}
-				}
-
-				edge->setRiver(edge->getRiver() + 1);
-				c->setRiver(c->getRiver() + 1);
-				c->getDownSlope()->setRiver(c->getDownSlope()->getRiver() + 1);
-				c = c->getDownSlope().get();
-			}
-		}
+		// USING AMITS DOWNSLOPES AND RIVER CODE WONT WORK BECAUSE ITS
+		//	INCOMPATIBLE WITH PERLIN NOISE HEIGHT. IT MUST BE USED WITH AN ISLAND
+		// THAT HAS ELEVATIONS SLOPING DOWN TOWARDS THE COAST
+//		int riverChance = 100;
+//		printf("riverChance: %d\n", riverChance);
+//		int riverCount = 0;
+//		std::uniform_int_distribution<> cornerRange(0, corners.size() - 1);
+//		for(int i = 0; i < riverChance; ++i){
+//			auto randIter = corners.begin();
+//			std::advance(randIter, cornerRange(gen));
+//			CellCorner* c = randIter->second.get();
+//
+//			// river conditions/requirements
+//			if(c->isOcean() || c->getElevation() < 0.3 || c->getElevation() > 0.9){
+//				continue;
+//			}
+//
+//			riverCount += 1;
+//			while(!c->isCoast()){
+//				if(c == c->getDownSlope().get()) break;
+//
+//				CellEdge* edge;
+//				// get
+//				for(auto e : c->getProtrudes()){
+//					if(e->getVoronoiEdge().first.get() == c->getDownSlope().get() ||
+//							e->getVoronoiEdge().second.get() == c->getDownSlope().get()){
+//						edge = e.get();
+//					}
+//				}
+//
+//				edge->setRiver(edge->getRiver() + 1);
+//				c->setRiver(c->getRiver() + 1);
+//				c->getDownSlope()->setRiver(c->getDownSlope()->getRiver() + 1);
+//				c = c->getDownSlope().get();
+//			}
+//		}
+//
+//		printf("riverCount: %d\n\n", riverCount);
 	}
 	void VoronoiMap::assignPolyColours(){
 		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
-			if(iter->second->isCoast() && !iter->second->isWater() && iter->second->getElevation() <= 0.55){
+			if(iter->second->isCoast() && !iter->second->isWater() && iter->second->getElevation() <= 0.50){
 				iter->second->setColour(sf::Color(204, 204, 0));
-			}else if(iter->second->getElevation() >= 0.76){
+			}else if(iter->second->getElevation() >= 0.70){
 				iter->second->setColour(sf::Color(200, 200, 200));
-			}else if(iter->second->getElevation() >= 0.6){
+			}else if(iter->second->getElevation() >= 0.56){
 				iter->second->setColour(sf::Color(77, 77, 77));
+			}else if(iter->second->getElevation() <= 0.15 && !iter->second->isCoast()
+					&& !iter->second->isOcean()){
+				iter->second->setIsWater(true);
+				for(auto c : iter->second->getCorners()){
+					c->setIsWater(true);
+				}
+				iter->second->setColour(sf::Color(51, 133, 255));
 			}
 		}
 	}
@@ -455,6 +519,62 @@ namespace VoronoiMap{
 			if(!e->isRiver()) continue;
 
 			window->draw(*e->getRiverLine());
+		}
+
+		if(drawElevation){
+			for(auto iter = corners.begin(); iter != corners.end(); ++iter){
+				CellCorner* a = iter->second->getDownslopeEdge()->getVoronoiEdge().first.get();
+				CellCorner* b = iter->second->getDownslopeEdge()->getVoronoiEdge().second.get();
+
+				if(b->getElevation() > a->getElevation()){
+					CellCorner* t = a;
+					a = b;
+					b = t;
+				}
+				float e = (a->getElevation() + b->getElevation()) / 2;
+
+				sf::LineShape lineDown(a->getPoint(), b->getPoint());
+				lineDown.setThickness(3);
+				if(e < 0.3){
+					lineDown.setFillColor(sf::Color(210, 255, 210));
+				}else if(e < 0.35){
+					lineDown.setFillColor(sf::Color(180, 255, 180));
+				}else if(e < 0.4){
+					lineDown.setFillColor(sf::Color(150, 255, 150));
+				}else if(e < 0.45){
+					lineDown.setFillColor(sf::Color(130, 255, 130));
+				}else if(e < 0.5){
+					lineDown.setFillColor(sf::Color(105, 255, 105));
+				}else if(e < 0.55){
+					lineDown.setFillColor(sf::Color(75, 255, 75));
+				}else if(e < 0.6){
+					lineDown.setFillColor(sf::Color(51, 255, 51));
+				}else if(e < 0.65){
+					lineDown.setFillColor(sf::Color(26, 255, 26));
+				}else if(e < 0.7){
+					lineDown.setFillColor(sf::Color(0, 255, 0));
+				}else if(e < 0.75){
+					lineDown.setFillColor(sf::Color(0, 235, 0));
+				}else if(e < 0.8){
+					lineDown.setFillColor(sf::Color(0, 205, 0));
+				}else if(e < 0.85){
+					lineDown.setFillColor(sf::Color(0, 180, 0));
+				}else if(e < 0.9){
+					lineDown.setFillColor(sf::Color(0, 150, 0));
+				}else if(e < 0.95){
+					lineDown.setFillColor(sf::Color(0, 135, 0));
+				}else if(e < 2.0){
+					lineDown.setFillColor(sf::Color(0, 120, 0));
+				}
+
+				window->draw(lineDown);
+
+				float pointSize = 10 * iter->second->getElevation();
+				sf::RectangleShape point(sf::Vector2f(pointSize, pointSize));
+				point.setPosition(iter->second->getPoint());
+				point.setFillColor(sf::Color::Yellow);
+				window->draw(point);
+			}
 		}
 	}
 	void VoronoiMap::mouseMoved(float x, float y){

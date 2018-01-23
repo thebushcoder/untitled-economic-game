@@ -149,6 +149,7 @@ namespace VoronoiMap{
 		std::shared_ptr<std::vector<Point2>> generateCellPoints(int numCells);
 
 		void createGameMap();
+		void generateWater();
 		void generateElevation();
 		void assignPolyColours();
 		bool insideCircle(float x, float y, float cX, float cY, int r);

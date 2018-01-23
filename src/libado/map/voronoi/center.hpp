@@ -113,6 +113,12 @@ namespace VoronoiMap{
 		void setMoisture(float moisture = 0.0) {
 			this->moisture = moisture;
 		}
+		float getRainfall() const {
+			return rainfall;
+		}
+		void setRainfall(float rainfall = 0.0) {
+			this->rainfall = rainfall;
+		}
 
 	private:
 		sf::Vector2f point;
@@ -129,6 +135,7 @@ namespace VoronoiMap{
 		bool coast = false;
 		bool border = false;
 		float elevation = 0.0;
+		float rainfall = 0.0;
 		float moisture = 0.0;
 		KingdomUtil::KingdomType owner = KingdomUtil::KingdomType::NONE;	// kingdom
 	};

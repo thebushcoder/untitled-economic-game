@@ -8,8 +8,8 @@
 #ifndef LIBADO_MAP_VORONOI_CELLCORNER_HPP_
 #define LIBADO_MAP_VORONOI_CELLCORNER_HPP_
 
-#include "celledge.hpp"
 #include "center.hpp"
+#include "celledge.hpp"
 
 namespace VoronoiMap{
 	class CellCorner{
@@ -106,6 +106,7 @@ namespace VoronoiMap{
 		void setWaterShedSize(int waterShedSize = 0) {
 			this->waterShedSize = waterShedSize;
 		}
+		CellEdge* getDownslopeEdge();
 
 	private:
 		bool mapBorder = false;
