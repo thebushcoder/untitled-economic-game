@@ -236,7 +236,7 @@ namespace VoronoiMap{
 		std::uniform_int_distribution<> xDis;
 		std::uniform_int_distribution<> yDis;
 
-		VoronoiDiagramGenerator generator;
+		std::unique_ptr<VoronoiDiagramGenerator> generator;
 		std::shared_ptr<Diagram> voronoiDiagram;
 
 		int mapW, mapH;

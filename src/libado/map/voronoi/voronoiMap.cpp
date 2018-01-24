@@ -15,14 +15,14 @@ namespace VoronoiMap{
 		xDis = std::uniform_int_distribution<>(0, mapW);
 		yDis = std::uniform_int_distribution<>(0, mapH);
 
-		generator = VoronoiDiagramGenerator();
+		generator = std::unique_ptr<VoronoiDiagramGenerator>(new VoronoiDiagramGenerator());
 
 		generateNewMap(numCells);
 	}
 	void VoronoiMap::generateNewMap(int numCells){
 		std::shared_ptr<std::vector<Point2>> points = generateCellPoints(numCells);
 		voronoiDiagram = std::shared_ptr<Diagram>(
-				generator.compute(*points, BoundingBox(0, mapW, mapH, 0))
+				generator->compute(*points, BoundingBox(0, mapW, mapH, 0))
 				);
 
 		int numRelax = 3;
@@ -31,7 +31,7 @@ namespace VoronoiMap{
 		}
 	}
 	void VoronoiMap::relaxDiagram(){
-		Diagram* relaxedDiagram = generator.relax();
+		Diagram* relaxedDiagram = generator->relax();
 
 		reset();
 
@@ -330,6 +330,36 @@ namespace VoronoiMap{
 			}
 		}
 
+		std::vector<Center*> polyFront;
+
+		for(auto iter = landCenters.begin(); iter != landCenters.end(); ++iter){
+			polyFront.push_back(iter->second.get());
+		}
+
+		std::map<Center*, Center*> outflow;
+		std::map<Center*, Center*> watershed;
+
+		for(int i = 0; i < polyFront.size(); ++i){
+			int pivot = std::ceil((polyFront.size() - i) / 4);
+
+			for(int k = polyFront.size() - 1; k > i; k -= pivot){
+				if(polyFront[k]->getElevation() < polyFront[i]->getElevation()){
+					Center* s = polyFront[k];
+					polyFront[k] = polyFront[i];
+					polyFront[i] = s;
+				}
+			}
+			Center* c = polyFront[i];
+
+			for(auto n : c->getNeighbours()){
+				if(outflow[n.get()] == nullptr){
+					outflow[n.get()] = c;
+					watershed[n.get()] = watershed[c];
+					polyFront.push_back(n.get());
+				}
+			}
+		}
+
 		//	calc downslopes: At every corner point, we point to the
 	    // point downstream from it, or to itself.  This is used for
 	    // generating rivers and watersheds.+
@@ -340,37 +370,6 @@ namespace VoronoiMap{
 					iter->second->setDownSlope(c);
 				}
 			}
-		}
-
-		for(auto iter = corners.begin(); iter != corners.end(); ++iter){
-			iter->second->setWaterShed(iter->second);
-			if(!iter->second->isOcean() && !iter->second->isCoast() && iter->second->getDownSlope()){
-				iter->second->setWaterShed(iter->second->getDownSlope());
-			}
-		}
-
-		// calc watersheds(the basis for rivers)
-		bool changed = false;
-		int stepCount = 100; // number of downslope iterations. 200 = sufficient to reach ocean/terminus
-		for(int i = 0; i < stepCount; ++i){
-			changed = false;
-			for(auto iter = corners.begin(); iter != corners.end(); ++iter){
-				if(!iter->second->isOcean() && !iter->second->isCoast() &&
-						!iter->second->getWaterShed()->isCoast()){
-					CellCorner* c = iter->second->getDownSlope()->getWaterShed().get();
-					if(!c->isOcean()){
-						iter->second->setWaterShed(iter->second->getDownSlope()->getWaterShed());
-						changed = true;
-					}
-				}
-			}
-			if(!changed) break;
-		}
-
-		for(auto iter = corners.begin(); iter != corners.end(); ++iter){
-			CellCorner* c = iter->second->getWaterShed().get();
-			int shedSize = 1 + c->getWaterShedSize();
-			c->setWaterShedSize(shedSize);
 		}
 
 		// USING AMITS DOWNSLOPES AND RIVER CODE WONT WORK BECAUSE ITS
