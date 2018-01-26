@@ -252,6 +252,7 @@ namespace VoronoiMap{
 							!iter->second->isCoast());
 			iter->second->setIsWater(flag);
 		}
+
 	}
 
 	void VoronoiMap::generateElevation(){
@@ -330,47 +331,111 @@ namespace VoronoiMap{
 			}
 		}
 
-		std::vector<Center*> polyFront;
-
-		for(auto iter = landCenters.begin(); iter != landCenters.end(); ++iter){
-			polyFront.push_back(iter->second.get());
+		// create list of non-water tiles
+		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
+			if(!iter->second->isWater() && iter->second->getElevation() > 0.0){
+				landCenters[{iter->second->getPoint().x,
+					iter->second->getPoint().y}] = iter->second;
+			}
 		}
 
-		std::map<Center*, Center*> outflow;
-		std::map<Center*, Center*> watershed;
+		// river generation
+		/*
+		 * 	delaunay triangle is a voronoi corner point surrounded by a triangle made
+		 * 	up from voronoi center points. Corner point contains links to delaunay edges/ centers
+		 */
+		std::queue<CellCorner*> delTriFront;
 
-		for(int i = 0; i < polyFront.size(); ++i){
-			int pivot = std::ceil((polyFront.size() - i) / 4);
+		std::map<CellCorner*, CellCorner*> outflow;		// del tri paths
+		std::map<CellCorner*, CellCorner*> watershed;	// del tri
 
-			for(int k = polyFront.size() - 1; k > i; k -= pivot){
-				if(polyFront[k]->getElevation() < polyFront[i]->getElevation()){
-					Center* s = polyFront[k];
-					polyFront[k] = polyFront[i];
-					polyFront[i] = s;
+		// Establish corner queue front
+		for(auto iter = corners.begin(); iter != corners.end(); ++iter){
+			bool nextToOcean = false;
+			for(auto n : iter->second->getAdjacent()){
+				if(n->isOcean()){
+					nextToOcean = true;
 				}
 			}
-			Center* c = polyFront[i];
+			if(!iter->second->isMapBorder() && !iter->second->isOcean()){
+				delTriFront.push(iter->second.get());
+				// init delaunay maps
+				watershed[iter->second.get()] = iter->second.get();
+				outflow[iter->second.get()] = iter->second.get();
+			}
+		}
 
-			for(auto n : c->getNeighbours()){
-				if(outflow[n.get()] == nullptr){
-					outflow[n.get()] = c;
-					watershed[n.get()] = watershed[c];
-					polyFront.push_back(n.get());
+		while(!delTriFront.empty()){
+			CellCorner* c = delTriFront.front();
+			delTriFront.pop();
+
+			int delTriangleSides = 2;
+			std::uniform_int_distribution<> randN(0, delTriangleSides);
+			int randIndex = randN(gen);
+
+			for(int i = 0; i <= delTriangleSides; ++i){
+				CellCorner* n = c->getAdjacent()[(i + randIndex) % delTriangleSides].get();
+				if(outflow[n] == nullptr){
+					outflow[n] = c;
+					watershed[n] = watershed[c];
+					if(!n->isWater() && !n->isOcean()){
+						delTriFront.push(n);
+					}
 				}
+			}
+		}
+
+//		for(int i = 0; i < polyFront.size(); ++i){
+//			int pivot = std::ceil((polyFront.size() - i) / 2);
+//
+//			// infinite loop here - looping due to constant swapping?
+//			for(int k = polyFront.size() - 1; k > i; k -= pivot){
+//				float a = polyFront[k]->getElevation();
+//				float b = polyFront[i]->getElevation();
+//
+//				if(a < b){
+//					Center* s = polyFront[k];
+//					polyFront[k] = polyFront[i];
+//					polyFront[i] = s;
+//				}
+//			}
+//
+//			Center* c = polyFront[i];
+//
+//			for(auto n : c->getNeighbours()){
+//				if((outflow.find(n.get()) == outflow.end()) || !outflow[n.get()]){
+//					outflow[n.get()] = c;
+//					watershed[n.get()] = watershed[c];
+//					Center* n2 = n.get();
+//					if(!n->isWater() && n->getElevation() > 0.0 &&
+//							(std::find(polyFront.begin(), polyFront.end(),
+//									n.get()) == polyFront.end())){
+//						polyFront.push_back(n.get());
+//					}
+//				}
+//			}
+//		}
+
+		for(auto iter = corners.begin(); iter != corners.end(); ++iter){
+			CellCorner* downStream = outflow[iter->second.get()];
+
+			if(downStream){
+				CellEdge* e = iter->second->getEdge(downStream);
+				e->setRiver(2);
 			}
 		}
 
 		//	calc downslopes: At every corner point, we point to the
 	    // point downstream from it, or to itself.  This is used for
 	    // generating rivers and watersheds.+
-		for(auto iter = corners.begin(); iter != corners.end(); ++iter){
-			iter->second->setDownSlope(iter->second);
-			for(auto c : iter->second->getAdjacent()){
-				if(c->getElevation() <= iter->second->getElevation()){
-					iter->second->setDownSlope(c);
-				}
-			}
-		}
+//		for(auto iter = corners.begin(); iter != corners.end(); ++iter){
+//			iter->second->setDownSlope(iter->second);
+//			for(auto c : iter->second->getAdjacent()){
+//				if(c->getElevation() <= iter->second->getElevation()){
+//					iter->second->setDownSlope(c);
+//				}
+//			}
+//		}
 
 		// USING AMITS DOWNSLOPES AND RIVER CODE WONT WORK BECAUSE ITS
 		//	INCOMPATIBLE WITH PERLIN NOISE HEIGHT. IT MUST BE USED WITH AN ISLAND
@@ -517,7 +582,7 @@ namespace VoronoiMap{
 		for(auto e : edges){
 			if(!e->isRiver()) continue;
 
-			window->draw(*e->getRiverLine());
+			window->draw(*e->getVorLine());
 		}
 
 		if(drawElevation){

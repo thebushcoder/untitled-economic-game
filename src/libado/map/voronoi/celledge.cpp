@@ -31,14 +31,14 @@ namespace VoronoiMap{
 	}
 	void CellEdge::setRiver(int river) {
 		if(river > 0){
-			riverLine = std::unique_ptr<sf::LineShape>(
+			vorLine = std::unique_ptr<sf::LineShape>(
 					new sf::LineShape(voronoiEdge->first->getPoint(),
 					voronoiEdge->second->getPoint())
 			);
-			riverLine->setThickness(
+			vorLine->setThickness(
 					(river == 1) ? 2 : river
 			);
-			riverLine->setFillColor(sf::Color::Blue);
+			vorLine->setFillColor(sf::Color::Blue);
 		}
 		this->river = river;
 	}

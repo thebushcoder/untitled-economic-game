@@ -108,6 +108,8 @@ namespace VoronoiMap{
 		}
 		CellEdge* getDownslopeEdge();
 
+		CellEdge* getEdge(CellCorner* n);
+
 	private:
 		bool mapBorder = false;
 		bool water = false;

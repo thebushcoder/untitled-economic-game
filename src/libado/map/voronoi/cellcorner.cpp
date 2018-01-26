@@ -17,4 +17,15 @@ namespace VoronoiMap{
 		}
 		return nullptr;
 	}
+	CellEdge* CellCorner::getEdge(CellCorner* n){
+		for(auto e : protrudes){
+			if((e->getVoronoiEdge().first.get() == this ||
+					e->getVoronoiEdge().second.get() == this) &&
+					(e->getVoronoiEdge().first.get() == n ||
+							e->getVoronoiEdge().second.get() == n)){
+				return e.get();
+			}
+		}
+		return nullptr;
+	}
 }

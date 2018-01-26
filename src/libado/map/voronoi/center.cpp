@@ -9,6 +9,8 @@
 #include "celledge.hpp"
 
 namespace VoronoiMap{
+	// walks(clockwise/counter) the voronoi(polygon) edges and returns the next unvisited
+	// edge connected to nextPoint
 	CellEdge* Center::getNextVorEdge(std::vector<CellEdge*>* visited, sf::Vector2f nextPoint){
 		for(auto e : polyEdges){
 			if(std::find(visited->begin(), visited->end(), e.get()) != visited->end()) continue;
@@ -30,5 +32,16 @@ namespace VoronoiMap{
 		}else{
 			return false;
 		}
+	}
+	CellEdge* Center::getDelEdge(Center* neighbour){
+		for(auto e : polyEdges){
+			if((e->getDelaunayEdge().first.get() == this ||
+					e->getDelaunayEdge().second.get() == this) &&
+					(e->getDelaunayEdge().first.get() == neighbour ||
+							e->getDelaunayEdge().second.get() == neighbour)){
+				return e.get();
+			}
+		}
+		return nullptr;
 	}
 }

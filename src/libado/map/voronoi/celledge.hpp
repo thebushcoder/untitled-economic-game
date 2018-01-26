@@ -50,16 +50,19 @@ public:
 		int getRiver(){
 			return river;
 		}
-		sf::LineShape* getRiverLine(){
-			return riverLine.get();
+		sf::LineShape* getDelLine(){
+			return delLine.get();
 		}
-
+		sf::LineShape* getVorLine(){
+			return vorLine.get();
+		}
 private:
 		void calcMidpoint();
 
 		std::shared_ptr<CenterPair> delaunayEdge;	// line connecting polygon center points
 		std::shared_ptr<CornerPair> voronoiEdge;	// a polygon outline edge
-		std::unique_ptr<sf::LineShape> riverLine;
+		std::unique_ptr<sf::LineShape> delLine;
+		std::unique_ptr<sf::LineShape> vorLine;
 		sf::Vector2f midPoint;
 		int river = 0;
 	};

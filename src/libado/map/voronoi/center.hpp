@@ -119,7 +119,7 @@ namespace VoronoiMap{
 		void setRainfall(float rainfall = 0.0) {
 			this->rainfall = rainfall;
 		}
-
+		CellEdge* getDelEdge(Center* neighbour);
 	private:
 		sf::Vector2f point;
 
