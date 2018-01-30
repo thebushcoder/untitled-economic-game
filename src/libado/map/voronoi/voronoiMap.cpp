@@ -35,7 +35,7 @@ namespace VoronoiMap{
 
 		reset();
 
-		voronoiDiagram = std::shared_ptr<Diagram>(relaxedDiagram);
+		voronoiDiagram.reset(relaxedDiagram);
 
 		createGameMap();
 	}
@@ -382,7 +382,7 @@ namespace VoronoiMap{
 			CellCorner* c = delTriFront[i];
 
 			for(auto n : c->getAdjacent()){
-				if(outflow.find(n.get()) == outflow.end()){
+				if(outflow.find(n.get()) == outflow.end() && (!n->isWater() && !n->isOcean())){
 					outflow[n.get()] = c;
 					watershed[n.get()] = watershed[c];
 					delTriFront.push_back(n.get());
@@ -407,24 +407,37 @@ namespace VoronoiMap{
 			}else if(riverSize[upStream] > riverSize[downStream]){
 				riverSize[downStream] = riverSize[upStream];
 			}
-
-			printf("Downstream river size : %d\n", riverSize[downStream]);
  		}
 
-		int count = 0;
 		for(int i = 0; i < corners.size(); ++i){
 			CellCorner* c = delTriFront[i];
 			int rSize = riverSize[c];
 			CellCorner* downStream = outflow[c];
 
-			if(downStream){
+			if(downStream && !c->isWater() && !downStream->isWater()){
 				CellEdge* e = c->getEdge(downStream);
 				e->setRiver(rSize);
-				count++;
 			}
 		}
-		printf("Num edges marked 'river' : %d\n", count);
 	}
+	void VoronoiMap::draw(sf::RenderWindow* window){
+		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
+
+			window->draw(iter->second->getPolyShape());
+
+			sf::RectangleShape point(sf::Vector2f(4, 4));
+			point.setPosition(iter->second->getPoint());
+			point.setFillColor(sf::Color::White);
+			window->draw(point);
+		}
+		for(auto e : edges){
+			if(!e->getVorLine()){
+				continue;
+			}
+			window->draw(*e->getVorLine());
+		}
+	}
+
 	void VoronoiMap::assignPolyColours(){
 		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
 			if(iter->second->isCoast() && !iter->second->isWater() && iter->second->getElevation() <= 0.50){
@@ -517,27 +530,6 @@ namespace VoronoiMap{
 			drawKingdoms = false;
 		}
 	}
-
-	void VoronoiMap::draw(sf::RenderWindow* window){
-		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
-
-			window->draw(iter->second->getPolyShape());
-
-			sf::RectangleShape point(sf::Vector2f(4, 4));
-			point.setPosition(iter->second->getPoint());
-			point.setFillColor(sf::Color::White);
-			window->draw(point);
-		}
-		static int lCount = 0;
-		int rCount = 0;
-		for(auto e : edges){
-			if(!e->getVorLine()){
-				continue;
-			}
-
-			window->draw(*e->getVorLine());
-		}
-	}
 	void VoronoiMap::mouseMoved(float x, float y){
 		if(x >= 0 && y >= 0 && x <= mapW && y <= mapH){
 			Center* c = getClosestCell(x, y);
@@ -624,8 +616,13 @@ namespace VoronoiMap{
 		corners.clear();
 		edges.clear();
 		allCenters.clear();
+		landCenters.clear();
+		drawElevation = false;
+		drawKingdoms = false;
 		lastCenter = nullptr;
 		mouseOver = nullptr;
+		std::random_device rd;
+		gen = std::mt19937(rd());
 	}
 	CenterPair VoronoiMap::createDelaunayEdge(Edge* e){
 		CenterPair dEdge;
