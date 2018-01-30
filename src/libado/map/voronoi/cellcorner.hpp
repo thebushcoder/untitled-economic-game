@@ -58,7 +58,7 @@ namespace VoronoiMap{
 		void setIsWater(bool isWater){
 			this->water = isWater;
 		}
-		bool operator ==(const CellCorner &b) const{
+		bool operator ==(const CellCorner &b){
 			return (this->point.x == b.point.x) && (this->point.y == b.point.y);
 		}
 		bool operator <(const CellCorner& right){

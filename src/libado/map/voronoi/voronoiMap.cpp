@@ -344,137 +344,86 @@ namespace VoronoiMap{
 		 * 	delaunay triangle is a voronoi corner point surrounded by a triangle made
 		 * 	up from voronoi center points. Corner point contains links to delaunay edges/ centers
 		 */
-		std::queue<CellCorner*> delTriFront;
+		std::vector<CellCorner*> delTriFront;
 
 		std::map<CellCorner*, CellCorner*> outflow;		// del tri paths
 		std::map<CellCorner*, CellCorner*> watershed;	// del tri
 
 		// Establish corner queue front
-		for(auto iter = corners.begin(); iter != corners.end(); ++iter){
-			bool nextToOcean = false;
-			for(auto n : iter->second->getAdjacent()){
-				if(n->isOcean()){
-					nextToOcean = true;
-				}
-			}
-			if(!iter->second->isMapBorder() && !iter->second->isOcean()){
-				delTriFront.push(iter->second.get());
-				// init delaunay maps
-				watershed[iter->second.get()] = iter->second.get();
-				outflow[iter->second.get()] = iter->second.get();
-			}
-		}
-
-		while(!delTriFront.empty()){
-			CellCorner* c = delTriFront.front();
-			delTriFront.pop();
-
-			int delTriangleSides = 2;
-			std::uniform_int_distribution<> randN(0, delTriangleSides);
-			int randIndex = randN(gen);
-
-			for(int i = 0; i <= delTriangleSides; ++i){
-				CellCorner* n = c->getAdjacent()[(i + randIndex) % delTriangleSides].get();
-				if(outflow[n] == nullptr){
-					outflow[n] = c;
-					watershed[n] = watershed[c];
-					if(!n->isWater() && !n->isOcean()){
-						delTriFront.push(n);
+		for(auto iter = landCenters.begin(); iter != landCenters.end(); ++iter){
+			if(iter->second->isCoast()){
+				for(auto c : iter->second->getCorners()){
+					if(c->isCoast()){
+						delTriFront.push_back(c.get());
+						// init delaunay maps
+						watershed[c.get()] = c.get();
+						outflow[c.get()] = c.get();
 					}
 				}
 			}
 		}
 
-//		for(int i = 0; i < polyFront.size(); ++i){
-//			int pivot = std::ceil((polyFront.size() - i) / 2);
-//
-//			// infinite loop here - looping due to constant swapping?
-//			for(int k = polyFront.size() - 1; k > i; k -= pivot){
-//				float a = polyFront[k]->getElevation();
-//				float b = polyFront[i]->getElevation();
-//
-//				if(a < b){
-//					Center* s = polyFront[k];
-//					polyFront[k] = polyFront[i];
-//					polyFront[i] = s;
-//				}
-//			}
-//
-//			Center* c = polyFront[i];
-//
-//			for(auto n : c->getNeighbours()){
-//				if((outflow.find(n.get()) == outflow.end()) || !outflow[n.get()]){
-//					outflow[n.get()] = c;
-//					watershed[n.get()] = watershed[c];
-//					Center* n2 = n.get();
-//					if(!n->isWater() && n->getElevation() > 0.0 &&
-//							(std::find(polyFront.begin(), polyFront.end(),
-//									n.get()) == polyFront.end())){
-//						polyFront.push_back(n.get());
-//					}
-//				}
-//			}
-//		}
+		for(int i = 0; i < delTriFront.size(); ++i){
 
-		for(auto iter = corners.begin(); iter != corners.end(); ++iter){
-			CellCorner* downStream = outflow[iter->second.get()];
+			int pivot = std::ceil((delTriFront.size() - i) / 4);
+			pivot = pivot > 0 ? pivot : 1;	// workaround to prevent infinite loop
 
-			if(downStream){
-				CellEdge* e = iter->second->getEdge(downStream);
-				e->setRiver(2);
+			for(int k = delTriFront.size() - 1; k > i; k -= pivot){
+				float a = delTriFront[k]->getElevation();
+				float b = delTriFront[i]->getElevation();
+
+				if(a < b){
+					CellCorner* s = delTriFront[k];
+					delTriFront[k] = delTriFront[i];
+					delTriFront[i] = s;
+				}
+			}
+
+			CellCorner* c = delTriFront[i];
+
+			for(auto n : c->getAdjacent()){
+				if(outflow.find(n.get()) == outflow.end()){
+					outflow[n.get()] = c;
+					watershed[n.get()] = watershed[c];
+					delTriFront.push_back(n.get());
+				}
 			}
 		}
 
-		//	calc downslopes: At every corner point, we point to the
-	    // point downstream from it, or to itself.  This is used for
-	    // generating rivers and watersheds.+
-//		for(auto iter = corners.begin(); iter != corners.end(); ++iter){
-//			iter->second->setDownSlope(iter->second);
-//			for(auto c : iter->second->getAdjacent()){
-//				if(c->getElevation() <= iter->second->getElevation()){
-//					iter->second->setDownSlope(c);
-//				}
-//			}
-//		}
+		std::map<CellCorner*, int> riverSize;
 
-		// USING AMITS DOWNSLOPES AND RIVER CODE WONT WORK BECAUSE ITS
-		//	INCOMPATIBLE WITH PERLIN NOISE HEIGHT. IT MUST BE USED WITH AN ISLAND
-		// THAT HAS ELEVATIONS SLOPING DOWN TOWARDS THE COAST
-//		int riverChance = 100;
-//		printf("riverChance: %d\n", riverChance);
-//		int riverCount = 0;
-//		std::uniform_int_distribution<> cornerRange(0, corners.size() - 1);
-//		for(int i = 0; i < riverChance; ++i){
-//			auto randIter = corners.begin();
-//			std::advance(randIter, cornerRange(gen));
-//			CellCorner* c = randIter->second.get();
-//
-//			// river conditions/requirements
-//			if(c->isOcean() || c->getElevation() < 0.3 || c->getElevation() > 0.9){
-//				continue;
-//			}
-//
-//			riverCount += 1;
-//			while(!c->isCoast()){
-//				if(c == c->getDownSlope().get()) break;
-//
-//				CellEdge* edge;
-//				// get
-//				for(auto e : c->getProtrudes()){
-//					if(e->getVoronoiEdge().first.get() == c->getDownSlope().get() ||
-//							e->getVoronoiEdge().second.get() == c->getDownSlope().get()){
-//						edge = e.get();
-//					}
-//				}
-//
-//				edge->setRiver(edge->getRiver() + 1);
-//				c->setRiver(c->getRiver() + 1);
-//				c->getDownSlope()->setRiver(c->getDownSlope()->getRiver() + 1);
-//				c = c->getDownSlope().get();
-//			}
-//		}
-//
-//		printf("riverCount: %d\n\n", riverCount);
+		for(int i = delTriFront.size() - 1; i >= 0; --i){
+			CellCorner* upStream = delTriFront[i];
+			CellCorner* downStream = outflow[upStream];
+
+			if(!downStream) continue;
+
+			if(riverSize.find(upStream) == riverSize.end()){
+				riverSize[upStream] = 1;
+			}
+
+			if(riverSize[upStream] == riverSize[downStream]){
+				riverSize[downStream]++;
+			}else if(riverSize[upStream] > riverSize[downStream]){
+				riverSize[downStream] = riverSize[upStream];
+			}
+
+			printf("Downstream river size : %d\n", riverSize[downStream]);
+ 		}
+
+		int count = 0;
+		for(int i = 0; i < corners.size(); ++i){
+			CellCorner* c = delTriFront[i];
+			int rSize = riverSize[c];
+			CellCorner* downStream = outflow[c];
+
+			if(downStream){
+				CellEdge* e = c->getEdge(downStream);
+				e->setRiver(rSize);
+				count++;
+			}
+		}
+		printf("Num edges marked 'river' : %d\n", count);
 	}
 	void VoronoiMap::assignPolyColours(){
 		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
@@ -579,66 +528,14 @@ namespace VoronoiMap{
 			point.setFillColor(sf::Color::White);
 			window->draw(point);
 		}
+		static int lCount = 0;
+		int rCount = 0;
 		for(auto e : edges){
-			if(!e->isRiver()) continue;
+			if(!e->getVorLine()){
+				continue;
+			}
 
 			window->draw(*e->getVorLine());
-		}
-
-		if(drawElevation){
-			for(auto iter = corners.begin(); iter != corners.end(); ++iter){
-				CellCorner* a = iter->second->getDownslopeEdge()->getVoronoiEdge().first.get();
-				CellCorner* b = iter->second->getDownslopeEdge()->getVoronoiEdge().second.get();
-
-				if(b->getElevation() > a->getElevation()){
-					CellCorner* t = a;
-					a = b;
-					b = t;
-				}
-				float e = (a->getElevation() + b->getElevation()) / 2;
-
-				sf::LineShape lineDown(a->getPoint(), b->getPoint());
-				lineDown.setThickness(3);
-				if(e < 0.3){
-					lineDown.setFillColor(sf::Color(210, 255, 210));
-				}else if(e < 0.35){
-					lineDown.setFillColor(sf::Color(180, 255, 180));
-				}else if(e < 0.4){
-					lineDown.setFillColor(sf::Color(150, 255, 150));
-				}else if(e < 0.45){
-					lineDown.setFillColor(sf::Color(130, 255, 130));
-				}else if(e < 0.5){
-					lineDown.setFillColor(sf::Color(105, 255, 105));
-				}else if(e < 0.55){
-					lineDown.setFillColor(sf::Color(75, 255, 75));
-				}else if(e < 0.6){
-					lineDown.setFillColor(sf::Color(51, 255, 51));
-				}else if(e < 0.65){
-					lineDown.setFillColor(sf::Color(26, 255, 26));
-				}else if(e < 0.7){
-					lineDown.setFillColor(sf::Color(0, 255, 0));
-				}else if(e < 0.75){
-					lineDown.setFillColor(sf::Color(0, 235, 0));
-				}else if(e < 0.8){
-					lineDown.setFillColor(sf::Color(0, 205, 0));
-				}else if(e < 0.85){
-					lineDown.setFillColor(sf::Color(0, 180, 0));
-				}else if(e < 0.9){
-					lineDown.setFillColor(sf::Color(0, 150, 0));
-				}else if(e < 0.95){
-					lineDown.setFillColor(sf::Color(0, 135, 0));
-				}else if(e < 2.0){
-					lineDown.setFillColor(sf::Color(0, 120, 0));
-				}
-
-				window->draw(lineDown);
-
-				float pointSize = 10 * iter->second->getElevation();
-				sf::RectangleShape point(sf::Vector2f(pointSize, pointSize));
-				point.setPosition(iter->second->getPoint());
-				point.setFillColor(sf::Color::Yellow);
-				window->draw(point);
-			}
 		}
 	}
 	void VoronoiMap::mouseMoved(float x, float y){

@@ -36,7 +36,7 @@ namespace VoronoiMap{
 					voronoiEdge->second->getPoint())
 			);
 			vorLine->setThickness(
-					(river == 1) ? 2 : river
+					river > 4 ? 3 : river
 			);
 			vorLine->setFillColor(sf::Color::Blue);
 		}

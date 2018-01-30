@@ -43,7 +43,7 @@ public:
 
 		bool operator <(const CellEdge& right) const;
 
-		bool isRiver() const {
+		bool isRiver(){
 			return river > 0;
 		}
 		void setRiver(int river);
