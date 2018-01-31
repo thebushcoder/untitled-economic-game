@@ -349,7 +349,7 @@ namespace VoronoiMap{
 		std::map<CellCorner*, CellCorner*> outflow;		// del tri paths
 		std::map<CellCorner*, CellCorner*> watershed;	// del tri
 
-		// Establish corner queue front
+		// Establish corner queue front - uses coastline
 		for(auto iter = landCenters.begin(); iter != landCenters.end(); ++iter){
 			if(iter->second->isCoast()){
 				for(auto c : iter->second->getCorners()){
@@ -363,8 +363,10 @@ namespace VoronoiMap{
 			}
 		}
 
+		// walk the corner front/queue
 		for(int i = 0; i < delTriFront.size(); ++i){
 
+			// elevation sorted rotated list
 			int pivot = std::ceil((delTriFront.size() - i) / 4);
 			pivot = pivot > 0 ? pivot : 1;	// workaround to prevent infinite loop
 
@@ -379,8 +381,8 @@ namespace VoronoiMap{
 				}
 			}
 
+			// mark water outflow and add outflow point to queue
 			CellCorner* c = delTriFront[i];
-
 			for(auto n : c->getAdjacent()){
 				if(outflow.find(n.get()) == outflow.end() && (!n->isWater() && !n->isOcean())){
 					outflow[n.get()] = c;
@@ -390,6 +392,7 @@ namespace VoronoiMap{
 			}
 		}
 
+		// establish river size/width - using the Strahler number
 		std::map<CellCorner*, int> riverSize;
 
 		for(int i = delTriFront.size() - 1; i >= 0; --i){
@@ -409,9 +412,35 @@ namespace VoronoiMap{
 			}
  		}
 
+		// 2 pass loop - required to tidy up stray coastal rivers
+		for(int i = 0; i < 2; ++i){
+			// cull excess rivers - only interested in wide rivers and those attached to them
+			for(auto iter = riverSize.begin(); iter != riverSize.end(); ++iter){
+				if(iter->first->isCoast()){
+					iter->second = 0;
+				}
+
+				if(iter->second > 1) continue;
+
+				bool hasWideNeighbour = false;
+				for(auto n : iter->first->getAdjacent()){
+					if(riverSize[n.get()] > 1){
+						hasWideNeighbour = true;
+					}
+				}
+				if(!hasWideNeighbour){
+					iter->second = 0;
+				}
+			}
+		}
+
+		// mark voronoi edges as rivers
 		for(int i = 0; i < corners.size(); ++i){
 			CellCorner* c = delTriFront[i];
 			int rSize = riverSize[c];
+
+			if(rSize <= 0) continue;
+
 			CellCorner* downStream = outflow[c];
 
 			if(downStream && !c->isWater() && !downStream->isWater()){
@@ -421,6 +450,7 @@ namespace VoronoiMap{
 		}
 	}
 	void VoronoiMap::draw(sf::RenderWindow* window){
+		// draw polygons
 		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
 
 			window->draw(iter->second->getPolyShape());
@@ -430,6 +460,7 @@ namespace VoronoiMap{
 			point.setFillColor(sf::Color::White);
 			window->draw(point);
 		}
+		// draw rivers
 		for(auto e : edges){
 			if(!e->getVorLine()){
 				continue;
@@ -439,13 +470,18 @@ namespace VoronoiMap{
 	}
 
 	void VoronoiMap::assignPolyColours(){
+		// default tile colour is green(grass)
 		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
+			// colour coast yellow(sand)
 			if(iter->second->isCoast() && !iter->second->isWater() && iter->second->getElevation() <= 0.50){
 				iter->second->setColour(sf::Color(204, 204, 0));
+			// colour mountain peaks / high mountains - near white(snow capped peaks)
 			}else if(iter->second->getElevation() >= 0.70){
 				iter->second->setColour(sf::Color(200, 200, 200));
+			// colour low mountains dark grey(stone)
 			}else if(iter->second->getElevation() >= 0.56){
 				iter->second->setColour(sf::Color(77, 77, 77));
+			// colour and mark low elevations blue + water
 			}else if(iter->second->getElevation() <= 0.15 && !iter->second->isCoast()
 					&& !iter->second->isOcean()){
 				iter->second->setIsWater(true);
