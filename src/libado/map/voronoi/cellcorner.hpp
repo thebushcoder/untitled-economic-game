@@ -49,9 +49,6 @@ namespace VoronoiMap{
 		void addNeighbourCorner(std::shared_ptr<CellCorner> c){
 			adjacent.push_back(c);
 		}
-		bool isRiver(){
-			return river > 0;
-		}
 		bool isWater(){
 			return water;
 		}
@@ -76,38 +73,12 @@ namespace VoronoiMap{
 		void setIsOcean(bool isOcean = false) {
 			this->ocean = isOcean;
 		}
-		std::shared_ptr<CellCorner>& getDownSlope() {
-			return downSlope;
-		}
-		void setDownSlope(std::shared_ptr<CellCorner> const& downSlope) {
-			this->downSlope = downSlope;
-		}
 		float getMoisture() const {
 			return moisture;
 		}
 		void setMoisture(float moisture = 0.0) {
 			this->moisture = moisture;
 		}
-		void setRiver(int river = 0) {
-			this->river = river;
-		}
-		int getRiver(){
-			return river;
-		}
-		std::shared_ptr<CellCorner>& getWaterShed(){
-			return waterShed;
-		}
-		void setWaterShed(std::shared_ptr<CellCorner> const& waterShed) {
-				this->waterShed = waterShed;
-		}
-		int getWaterShedSize() const {
-			return waterShedSize;
-		}
-		void setWaterShedSize(int waterShedSize = 0) {
-			this->waterShedSize = waterShedSize;
-		}
-		CellEdge* getDownslopeEdge();
-
 		CellEdge* getEdge(CellCorner* n);
 
 	private:
@@ -117,11 +88,6 @@ namespace VoronoiMap{
 		bool coast = false;
 		float elevation = 0.0;
 		float moisture = 0.0;
-		int river = 0;
-		int waterShedSize = 0;
-
-		std::shared_ptr<CellCorner> downSlope = nullptr;
-		std::shared_ptr<CellCorner> waterShed = nullptr;
 
 		sf::Vector2f point;
 

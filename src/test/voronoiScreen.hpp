@@ -24,6 +24,7 @@
 #include "../libado/screen.hpp"
 #include "../libado/screenManager.hpp"
 #include "../libado/map/voronoi/voronoiMap.hpp"
+#include "../libado/map/voronoi/terrainGeneration.hpp"
 
 #include "../libado/entity/components/kingdomComponent.hpp"
 #include "../libado/entity/components/provincesComponent.hpp"
@@ -41,7 +42,6 @@ public:
 	void resize(sf::Event& e);
 	void handleInput(sf::Time& delta);
 	void loadResources();
-
 private:
 	VoronoiMap::VoronoiMap* voronoiDiagram = nullptr;
 

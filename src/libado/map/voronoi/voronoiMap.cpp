@@ -164,291 +164,8 @@ namespace VoronoiMap{
 			}
 			iter->second->setColour(sf::Color(51, 102, 0));
 		}
-
-		generateWater();
-		// CREATE ELEVATION
-		generateElevation();
-		assignPolyColours();
 	}
 
-	void VoronoiMap::generateWater(){
-		// center is outside island shape - mark as water
-		for(auto iter = corners.begin(); iter != corners.end(); ++iter){
-			if(!insideLandShape(iter->second->getPoint())){
-				iter->second->setIsWater(true);
-			}
-			if(iter->second->isMapBorder()){
-				iter->second->setElevation(0.0);
-			}
-		}
-
-		// create water centers - additional ocean + lakes
-		int numWater;
-		float lakeThreshold = 0.1;
-		std::queue<Center*> front;
-
-		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
-			numWater = 0;
-			for(auto c : iter->second->getCorners()){
-				// mark border + ocean
-				if(c->isMapBorder()){
-					iter->second->setIsOcean(true);
-					iter->second->setIsBorder(true);
-					c->setIsWater(true);
-					front.push(iter->second.get());
-				}
-				if(c->isWater()){
-					numWater += 1;
-				}
-			}
-			// mark lakes
-			bool flag = (iter->second->isWater() ||
-					numWater >= iter->second->getCorners().size() * lakeThreshold);
-			iter->second->setIsWater(flag);
-
-//			iter->second->setRainfall();
-		}
-
-		while(!front.empty()){
-			Center* current = front.front();
-			front.pop();
-
-			for(auto n : current->getNeighbours()){
-				if(n->isWater() && !n->isOcean()){
-					n->setIsOcean(true);
-					front.push(n.get());
-				}
-			}
-		}
-
-		// mark coastline
-		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
-			int numOcean = 0;
-			int numLand = 0;
-
-			for(auto n : iter->second->getNeighbours()){
-				numOcean += (n->isOcean() ? 1 : 0);
-				numLand += (!n->isWater() ? 1 : 0);
-			}
-			bool flag = (numOcean > 0) && (numLand > 0);
-			iter->second->setIsCoast(flag);
-		}
-
-		for(auto iter = corners.begin(); iter != corners.end(); ++iter){
-			int numOcean = 0;
-			int numLand = 0;
-			for(auto t : iter->second->getTouches()){
-				numOcean += (t->isOcean() ? 1 : 0);
-				numLand += (!t->isWater() ? 1 : 0);
-			}
-			bool flag = (numOcean >= iter->second->getTouches().size());
-			iter->second->setIsOcean(flag);
-
-			flag = (numOcean > 0) && (numLand > 0);
-			iter->second->setIsCoast(flag);
-
-			flag = iter->second->isMapBorder() ||
-					((numLand != iter->second->getTouches().size()) &&
-							!iter->second->isCoast());
-			iter->second->setIsWater(flag);
-		}
-
-	}
-
-	void VoronoiMap::generateElevation(){
-		// 	use perlin noise to generate height map
-		FastNoise perlinNoise;
-		perlinNoise.SetSeed(gen());
-		perlinNoise.SetNoiseType(FastNoise::Perlin);
-		perlinNoise.SetInterp(FastNoise::Linear);
-		// decrease to create larger patches of similar height
-		// increase for more extreme, rugged patches of mountains
-		perlinNoise.SetFrequency(0.0070);
-
-		//	set poly/center elevation
-		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
-			if(iter->second->isWater()){
-				iter->second->setElevation(0.0);
-			}else{
-				// elevFactor - increase to increase general elevation,
-				// decrease to produce flatter land
-				float elevFactor = 0.9;
-				float e = (elevFactor + perlinNoise.GetNoise(iter->second->getPoint().x, iter->second->getPoint().y)) / 2;
-				iter->second->setElevation(e);
-			}
-		}
-		//	set corner elevations to the avg of neighbouring poly/centers
-		for(auto iter = corners.begin(); iter != corners.end(); ++iter){
-			float e = 0;
-			for(auto c : iter->second->getTouches()){
-				e += c->getElevation();
-			}
-			e = e / iter->second->getTouches().size();
-			iter->second->setElevation(e);
-		}
-
-		// fill sinks - erodes terrain to make rivers look more natural
-		// Ref: (function fillSinks(h, epsilon)) https://github.com/mewo2/terrain/blob/master/terrain.js
-		/*
-		 *  There's an obvious problem when we reach gridpoints which are lower than all
-		 *  of their neighbours. Do we route the water back uphill? This will probably
-		 *  lead to cycles in the water system, which are trouble. Instead, we want to
-		 *  fill in these gaps (often called sinks or depressions), so that the water
-		 *  always runs downhill all the way to the edge.
-		 */
-		std::map<std::pair<float, float>, float> newHeightmap;
-		std::queue<CellCorner*> front;
-
-		for(auto iter = corners.begin(); iter != corners.end(); ++iter){
-			if(iter->second->isMapBorder()){
-				newHeightmap[{iter->second->getPoint().x, iter->second->getPoint().y}]
-							 = 0;
-				front.push(iter->second.get());
-			}else{
-				newHeightmap[{iter->second->getPoint().x, iter->second->getPoint().y}]
-							 = 9999;
-			}
-		}
-
-		float epsilon = 0.0125;
-		while(!front.empty()){
-			CellCorner* c = front.front();
-			front.pop();
-
-			for(auto n : c->getAdjacent()){
-				if(c->getElevation() >=
-						newHeightmap[{n->getPoint().x, n->getPoint().y}] + epsilon){
-					newHeightmap[{c->getPoint().x, c->getPoint().y}] = c->getElevation();
-					front.push(n.get());
-					break;
-				}
-				float k = newHeightmap[{n->getPoint().x, n->getPoint().y}] + epsilon;
-				if((newHeightmap[{n->getPoint().x, n->getPoint().y}] > k) &&
-						(k > c->getElevation())){
-					newHeightmap[{c->getPoint().x, c->getPoint().y}] = k;
-					front.push(n.get());
-				}
-			}
-		}
-
-		// create list of non-water tiles
-		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
-			if(!iter->second->isWater() && iter->second->getElevation() > 0.0){
-				landCenters[{iter->second->getPoint().x,
-					iter->second->getPoint().y}] = iter->second;
-			}
-		}
-
-		// river generation
-		/*
-		 * 	delaunay triangle is a voronoi corner point surrounded by a triangle made
-		 * 	up from voronoi center points. Corner point contains links to delaunay edges/ centers
-		 */
-		std::vector<CellCorner*> delTriFront;
-
-		std::map<CellCorner*, CellCorner*> outflow;		// del tri paths
-		std::map<CellCorner*, CellCorner*> watershed;	// del tri
-
-		// Establish corner queue front - uses coastline
-		for(auto iter = landCenters.begin(); iter != landCenters.end(); ++iter){
-			if(iter->second->isCoast()){
-				for(auto c : iter->second->getCorners()){
-					if(c->isCoast()){
-						delTriFront.push_back(c.get());
-						// init delaunay maps
-						watershed[c.get()] = c.get();
-						outflow[c.get()] = c.get();
-					}
-				}
-			}
-		}
-
-		// walk the corner front/queue
-		for(int i = 0; i < delTriFront.size(); ++i){
-
-			// elevation sorted rotated list
-			int pivot = std::ceil((delTriFront.size() - i) / 4);
-			pivot = pivot > 0 ? pivot : 1;	// workaround to prevent infinite loop
-
-			for(int k = delTriFront.size() - 1; k > i; k -= pivot){
-				float a = delTriFront[k]->getElevation();
-				float b = delTriFront[i]->getElevation();
-
-				if(a < b){
-					CellCorner* s = delTriFront[k];
-					delTriFront[k] = delTriFront[i];
-					delTriFront[i] = s;
-				}
-			}
-
-			// mark water outflow and add outflow point to queue
-			CellCorner* c = delTriFront[i];
-			for(auto n : c->getAdjacent()){
-				if(outflow.find(n.get()) == outflow.end() && (!n->isWater() && !n->isOcean())){
-					outflow[n.get()] = c;
-					watershed[n.get()] = watershed[c];
-					delTriFront.push_back(n.get());
-				}
-			}
-		}
-
-		// establish river size/width - using the Strahler number
-		std::map<CellCorner*, int> riverSize;
-
-		for(int i = delTriFront.size() - 1; i >= 0; --i){
-			CellCorner* upStream = delTriFront[i];
-			CellCorner* downStream = outflow[upStream];
-
-			if(!downStream) continue;
-
-			if(riverSize.find(upStream) == riverSize.end()){
-				riverSize[upStream] = 1;
-			}
-
-			if(riverSize[upStream] == riverSize[downStream]){
-				riverSize[downStream]++;
-			}else if(riverSize[upStream] > riverSize[downStream]){
-				riverSize[downStream] = riverSize[upStream];
-			}
- 		}
-
-		// 2 pass loop - required to tidy up stray coastal rivers
-		for(int i = 0; i < 2; ++i){
-			// cull excess rivers - only interested in wide rivers and those attached to them
-			for(auto iter = riverSize.begin(); iter != riverSize.end(); ++iter){
-				if(iter->first->isCoast()){
-					iter->second = 0;
-				}
-
-				if(iter->second > 1) continue;
-
-				bool hasWideNeighbour = false;
-				for(auto n : iter->first->getAdjacent()){
-					if(riverSize[n.get()] > 1){
-						hasWideNeighbour = true;
-					}
-				}
-				if(!hasWideNeighbour){
-					iter->second = 0;
-				}
-			}
-		}
-
-		// mark voronoi edges as rivers
-		for(int i = 0; i < corners.size(); ++i){
-			CellCorner* c = delTriFront[i];
-			int rSize = riverSize[c];
-
-			if(rSize <= 0) continue;
-
-			CellCorner* downStream = outflow[c];
-
-			if(downStream && !c->isWater() && !downStream->isWater()){
-				CellEdge* e = c->getEdge(downStream);
-				e->setRiver(rSize);
-			}
-		}
-	}
 	void VoronoiMap::draw(sf::RenderWindow* window){
 		// draw polygons
 		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
@@ -481,14 +198,6 @@ namespace VoronoiMap{
 			// colour low mountains dark grey(stone)
 			}else if(iter->second->getElevation() >= 0.56){
 				iter->second->setColour(sf::Color(77, 77, 77));
-			// colour and mark low elevations blue + water
-			}else if(iter->second->getElevation() <= 0.15 && !iter->second->isCoast()
-					&& !iter->second->isOcean()){
-				iter->second->setIsWater(true);
-				for(auto c : iter->second->getCorners()){
-					c->setIsWater(true);
-				}
-				iter->second->setColour(sf::Color(51, 133, 255));
 			}
 		}
 	}
@@ -525,6 +234,38 @@ namespace VoronoiMap{
 				iter->second->reApplyColour();
 			}
 			drawElevation = false;
+		}
+	}
+	void VoronoiMap::toggleMoistureDraw(){
+		if(!drawMoisture){
+			for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
+				if(iter->second->getMoisture() <= 0.0){
+					sf::Color colour(0, 0, 0);
+					iter->second->getPolyShape().setFillColor(colour);
+				}else if(iter->second->getMoisture() <= 0.2){
+					sf::Color colour(0, 0, 50);
+					iter->second->getPolyShape().setFillColor(colour);
+				}else if(iter->second->getMoisture() <= 0.4){
+					sf::Color colour(0, 0, 100);
+					iter->second->getPolyShape().setFillColor(colour);
+				}else if(iter->second->getMoisture() <= 0.6){
+					sf::Color colour(0, 0, 165);
+					iter->second->getPolyShape().setFillColor(colour);
+				}else if(iter->second->getMoisture() <= 0.8){
+					sf::Color colour(0, 0, 200);
+					iter->second->getPolyShape().setFillColor(colour);
+				}else if(iter->second->getMoisture() <= 1.0 ||
+						iter->second->getMoisture() > 1.0){
+					sf::Color colour(0, 0, 255);
+					iter->second->getPolyShape().setFillColor(colour);
+				}
+			}
+			drawMoisture = true;
+		}else{
+			for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
+				iter->second->reApplyColour();
+			}
+			drawMoisture = false;
 		}
 	}
 
@@ -708,5 +449,90 @@ namespace VoronoiMap{
 		corners[{point.x, point.y}] = corner;
 
 		return corner;
+	}
+	bool VoronoiMap::insideLandShape(sf::Vector2f point){
+		// The min-max start angle for the sin function, in radians.
+		static std::uniform_int_distribution<> doubleRange(0.0, 2 * M_PI);
+		// The min-max number of sine wave "bumps" along the island.
+		static std::uniform_int_distribution<> bumpRange(1, 6);
+		static std::uniform_int_distribution<> dipRange(0.2, 0.7);
+
+		if(!shapeGen){
+			// The number of sine waves which form bumps along the island.
+			bumps = bumpRange(gen);
+			// The start angle for the sin function, in radians.
+			startAngle = doubleRange(gen);
+			dipAngle = doubleRange(gen);
+			dipWidth = dipRange(gen);
+			shapeGen = true;
+		}
+
+		// increase scale to decrease land mass size
+		float radiusScale = 1;
+		// normalize passed in point/vector
+		point = sf::Vector2f( radiusScale * (point.x / mapW - 0.5),
+				radiusScale * (point.y / mapH - 0.5));
+
+		// Get the angle of the point from the center of the island
+		double angle = std::atan2(point.y, point.x);
+		// Get the normalized length of whichever axis is longer
+		double length = 0.5 * (std::max(std::abs(point.x), std::abs(point.y)) +
+				std::sqrt(point.x * point.x + point.y * point.y));
+		// The inner radius has to be smaller than the length for this to be land
+		double r1 = 0.5 + 0.40 * std::sin(startAngle + bumps * angle + std::cos((bumps + 3)
+				* angle));
+		// The outer radius has to be larger than the length for this to be land
+		double r2 = 0.3 - 0.20 * std::sin(startAngle + bumps * angle - std::sin((bumps + 2)
+				* angle));
+		if (std::abs(angle - dipAngle) < dipWidth
+		|| std::abs(angle - dipAngle + 2 * M_PI) < dipWidth
+		|| std::abs(angle - dipAngle - 2 * M_PI) < dipWidth)
+		{
+			// Our angle is less than the minimum angle
+			r1 = r2 = 0.2;
+		}
+
+		return (length < r1 || (length > r1 * ISLAND_FACTOR && length < r2));
+	}
+	void VoronoiMap::mouseClick(float x, float y){
+		Center* c = getClosestCell(x,y);
+
+		if(drawElevation){
+			printf("###################\n");
+			printf("Clicked Poly elev: %f\n\n", c->getElevation());
+
+			for(auto n : c->getNeighbours()){
+				printf("\tneighbour Poly elev: %f\n", n->getElevation());
+			}
+			printf("\n");
+			for(auto a : c->getCorners()){
+				printf("\tPoly corner elev: %f\n", a->getElevation());
+			}
+
+			printf("###################\n");
+		}else if(drawMoisture){
+			printf("###################\n");
+			printf("Clicked Poly moist: %f\n", c->getMoisture());
+			printf("\tNoise moist: %f\n", c->nMoist);
+			printf("\tElevation moist: %f\n", c->eMoist);
+			printf("\twater src moist: %f\n", c->wMoist);
+
+			printf("###################\n");
+		}else if(!firstPolyClicked){
+			firstPolyClicked = c;
+		}else{
+			float d = calcDist(firstPolyClicked->getPoint().x, firstPolyClicked->getPoint().y,
+					c->getPoint().x, c->getPoint().y);
+
+			printf("Mouse click\n");
+			printf("First: %f, %f\n", firstPolyClicked->getPoint().x,
+					firstPolyClicked->getPoint().y);
+			printf("Second: %f, %f\n", c->getPoint().x, c->getPoint().y);
+			printf("Raw dist: %f km\n", d);
+			printf("Travel dist(days): %d \n",
+					calcTravelDist(firstPolyClicked->getPoint(), c->getPoint()));
+			printf("===========\n");
+			firstPolyClicked = nullptr;
+		}
 	}
 }
