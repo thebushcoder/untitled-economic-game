@@ -13,27 +13,53 @@
 #include "../../util/lineShape.hpp"
 
 namespace VoronoiMap{
-	typedef std::pair<std::shared_ptr<Center>, std::shared_ptr<Center>> CenterPair;
-	typedef std::pair<std::shared_ptr<CellCorner>, std::shared_ptr<CellCorner>> CornerPair;
+	template <class T> class LineEdge{
+	public:
+		std::shared_ptr<T>& getPointA(){
+			return pointA;
+		}
+		void setPointA(std::shared_ptr<T> pointA) {
+			this->pointA = pointA;
+			aIsSet = true;
+		}
+		std::shared_ptr<T>& getPointB(){
+			return pointB;
+		}
+		void setPointB(std::shared_ptr<T> pointB) {
+			this->pointB = pointB;
+			bIsSet = true;
+		}
+		bool hasPointA(){
+			return aIsSet;
+		}
+		bool hasPointB(){
+			return bIsSet;
+		}
+	private:
+		bool aIsSet = false;
+		bool bIsSet = false;
+		std::shared_ptr<T> pointA = nullptr;
+		std::shared_ptr<T> pointB = nullptr;
+	};
 
 	class CellEdge{
 public:
 		~CellEdge(){}
 
-		CenterPair& getDelaunayEdge(){
-			return *delaunayEdge;
+		LineEdge<Center>* getDelaunayEdge(){
+			return delaunayEdge.get();
 		}
 		sf::Vector2f getMidPoint() const {
 			return midPoint;
 		}
-		CornerPair& getVoronoiEdge(){
-			return *voronoiEdge;
+		LineEdge<CellCorner>* getVoronoiEdge(){
+			return voronoiEdge.get();
 		}
-		void setDelaunayEdge(CenterPair dEdge){
-			delaunayEdge = std::make_shared<CenterPair>(dEdge.first, dEdge.second);
+		void setDelaunayEdge(std::shared_ptr<LineEdge<Center>> dEdge){
+			delaunayEdge = dEdge;
 		}
-		void setVoronoiEdge(CornerPair vEdge){
-			voronoiEdge = std::make_shared<CornerPair>(vEdge.first, vEdge.second);
+		void setVoronoiEdge(std::shared_ptr<LineEdge<CellCorner>> vEdge){
+			voronoiEdge = vEdge;
 			calcMidpoint();
 		}
 		bool operator !=(const CellEdge &b) const{
@@ -44,11 +70,11 @@ public:
 		bool operator <(const CellEdge& right) const;
 
 		bool isRiver(){
-			return river > 0;
+			return riverSize > 0;
 		}
 		void setRiver(int river);
 		int getRiver(){
-			return river;
+			return riverSize;
 		}
 		sf::LineShape* getDelLine(){
 			return delLine.get();
@@ -56,15 +82,18 @@ public:
 		sf::LineShape* getVorLine(){
 			return vorLine.get();
 		}
+		bool hasCorner(CellCorner* c){
+			return (voronoiEdge->getPointA().get() == c) || (voronoiEdge->getPointB().get() == c);
+		}
 private:
 		void calcMidpoint();
 
-		std::shared_ptr<CenterPair> delaunayEdge;	// line connecting polygon center points
-		std::shared_ptr<CornerPair> voronoiEdge;	// a polygon outline edge
+		std::shared_ptr<LineEdge<Center>> delaunayEdge;	// line connecting polygon center points
+		std::shared_ptr<LineEdge<CellCorner>> voronoiEdge;	// a polygon outline edge
 		std::unique_ptr<sf::LineShape> delLine;
 		std::unique_ptr<sf::LineShape> vorLine;
 		sf::Vector2f midPoint;
-		int river = 0;
+		int riverSize = 0;
 	};
 }
 

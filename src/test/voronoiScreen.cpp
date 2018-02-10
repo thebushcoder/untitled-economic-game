@@ -10,7 +10,7 @@
 void VoronoiScreen::init(){
 	status = RUNNING;
 
-	int numSites = 600, w = 1280, h = 1024;
+	int numSites = 800, w = 1600, h = 1024;
 
 	voronoiDiagram = new VoronoiMap::VoronoiMap(numSites, w, h);
 
@@ -18,7 +18,8 @@ void VoronoiScreen::init(){
 	VoronoiMap::TerrainGeneration::generateElevation(voronoiDiagram);
 	VoronoiMap::TerrainGeneration::generateRivers(voronoiDiagram);
 	VoronoiMap::TerrainGeneration::generateMoisture(voronoiDiagram);
-	voronoiDiagram->assignPolyColours();
+	VoronoiMap::TerrainGeneration::generateBiomes(voronoiDiagram);
+//	voronoiDiagram->assignPolyColours();
 
 	entityWorld = std::make_shared<anax::World>();
 	anax::Entity k = entityWorld->createEntity();
@@ -50,7 +51,8 @@ void VoronoiScreen::init(){
 		VoronoiMap::TerrainGeneration::generateElevation(voronoiDiagram);
 		VoronoiMap::TerrainGeneration::generateRivers(voronoiDiagram);
 		VoronoiMap::TerrainGeneration::generateMoisture(voronoiDiagram);
-		voronoiDiagram->assignPolyColours();
+		VoronoiMap::TerrainGeneration::generateBiomes(voronoiDiagram);
+//		voronoiDiagram->assignPolyColours();
 		KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, voronoiDiagram);
 	}));
 
@@ -62,7 +64,8 @@ void VoronoiScreen::init(){
 		VoronoiMap::TerrainGeneration::generateElevation(voronoiDiagram);
 		VoronoiMap::TerrainGeneration::generateRivers(voronoiDiagram);
 		VoronoiMap::TerrainGeneration::generateMoisture(voronoiDiagram);
-		voronoiDiagram->assignPolyColours();
+		VoronoiMap::TerrainGeneration::generateBiomes(voronoiDiagram);
+//		voronoiDiagram->assignPolyColours();
 		KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, voronoiDiagram);
 	}));
 

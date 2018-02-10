@@ -10,10 +10,12 @@
 
 #include "center.hpp"
 #include "celledge.hpp"
+#include "river.hpp"
 
 namespace VoronoiMap{
 	class CellCorner{
 	public:
+		CellCorner() {}
 		CellCorner(sf::Vector2f point) : point(point){}
 		~CellCorner(){}
 
@@ -81,6 +83,28 @@ namespace VoronoiMap{
 		}
 		CellEdge* getEdge(CellCorner* n);
 
+		std::shared_ptr<CellEdge>& getRiverEdge(){
+			return riverEdge;
+		}
+
+		void setRiverEdge(std::shared_ptr<CellEdge> river) {
+			this->riverEdge = river;
+		}
+		std::shared_ptr<CellCorner>& getDownStream(){
+			return downStream;
+		}
+		void setDownStream(std::shared_ptr<CellCorner> downStream) {
+			this->downStream = downStream;
+		}
+		std::shared_ptr<CellCorner> getUpstream(){
+			return upstream;
+		}
+		void setUpstream(std::shared_ptr<CellCorner> upstream) {
+			this->upstream = upstream;
+		}
+		std::shared_ptr<River>& getRiver();
+		void setRiver(std::shared_ptr<River> river);
+
 	private:
 		bool mapBorder = false;
 		bool water = false;
@@ -90,6 +114,11 @@ namespace VoronoiMap{
 		float moisture = 0.0;
 
 		sf::Vector2f point;
+
+		std::shared_ptr<CellCorner> upstream;
+		std::shared_ptr<CellCorner> downStream;
+		std::shared_ptr<CellEdge> riverEdge;
+		std::shared_ptr<River> river;
 
 		std::vector<std::shared_ptr<Center>> touches; // nearby center points
 		std::vector<std::shared_ptr<CellEdge>> protrudes; // edges protruding from corner point, like spokes on a wheel

@@ -13,6 +13,7 @@
 #include <VoronoiDiagramGenerator.h>
 
 #include "../../entity/kingdomType.hpp"
+#include "biomes.hpp"
 
 namespace VoronoiMap{
 	class CellEdge;
@@ -114,10 +115,18 @@ namespace VoronoiMap{
 			this->moisture = moisture;
 		}
 		CellEdge* getDelEdge(Center* neighbour);
+		Biomes::Biome getBiome() const {
+			return biome;
+		}
+		void setBiome(Biomes::Biome biome) {
+			this->biome = biome;
+		}
 
 		float nMoist = 0.0;
 		float eMoist = 0.0;
 		float wMoist = 0.0;
+
+
 	private:
 		sf::Vector2f point;
 
@@ -128,6 +137,7 @@ namespace VoronoiMap{
 		std::unique_ptr<sf::ConvexShape> polyShape;
 		sf::Color shapeCol;
 
+		Biomes::Biome biome;
 		bool water = false;
 		bool ocean = false;
 		bool coast = false;

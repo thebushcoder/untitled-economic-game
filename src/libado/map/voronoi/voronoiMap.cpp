@@ -68,65 +68,65 @@ namespace VoronoiMap{
 			gameEdge->setVoronoiEdge(createVoronoiEdge(e));
 
 			// add edges to centers
-			if(gameEdge->getDelaunayEdge().first){
-				gameEdge->getDelaunayEdge().first->addEdge(gameEdge);
+			if(gameEdge->getDelaunayEdge()->getPointA()){
+				gameEdge->getDelaunayEdge()->getPointA()->addEdge(gameEdge);
 			}
-			if(gameEdge->getDelaunayEdge().second){
-				gameEdge->getDelaunayEdge().second->addEdge(gameEdge);
+			if(gameEdge->getDelaunayEdge()->getPointB()){
+				gameEdge->getDelaunayEdge()->getPointB()->addEdge(gameEdge);
 			}
 
 			// add protruding edge to corners
-			if(gameEdge->getVoronoiEdge().first){
-				gameEdge->getVoronoiEdge().first->addProtrudingEdge(gameEdge);
+			if(gameEdge->getVoronoiEdge()->getPointA()){
+				gameEdge->getVoronoiEdge()->getPointA()->addProtrudingEdge(gameEdge);
 			}
-			if(gameEdge->getVoronoiEdge().second){
-				gameEdge->getVoronoiEdge().second->addProtrudingEdge(gameEdge);
+			if(gameEdge->getVoronoiEdge()->getPointB()){
+				gameEdge->getVoronoiEdge()->getPointB()->addProtrudingEdge(gameEdge);
 			}
 
 			// add one delaunay center to the neighbour list of the other delaunay center
-			if(gameEdge->getDelaunayEdge().first && gameEdge->getDelaunayEdge().second){
-				addToCenterList(gameEdge->getDelaunayEdge().first->getNeighbours(),
-						gameEdge->getDelaunayEdge().second);
-				addToCenterList(gameEdge->getDelaunayEdge().second->getNeighbours(),
-						gameEdge->getDelaunayEdge().first);
+			if(gameEdge->getDelaunayEdge()->getPointA() && gameEdge->getDelaunayEdge()->getPointB()){
+				addToCenterList(gameEdge->getDelaunayEdge()->getPointA()->getNeighbours(),
+						gameEdge->getDelaunayEdge()->getPointB());
+				addToCenterList(gameEdge->getDelaunayEdge()->getPointB()->getNeighbours(),
+						gameEdge->getDelaunayEdge()->getPointA());
 			}
 			// add voronoi edge corners to the adjacent list of the opposite corner
-			if(gameEdge->getVoronoiEdge().first && gameEdge->getVoronoiEdge().second){
-				addToCornerList(gameEdge->getVoronoiEdge().first->getAdjacent(),
-						gameEdge->getVoronoiEdge().second);
-				addToCornerList(gameEdge->getVoronoiEdge().second->getAdjacent(),
-						gameEdge->getVoronoiEdge().first);
+			if(gameEdge->getVoronoiEdge()->getPointA() && gameEdge->getVoronoiEdge()->getPointB()){
+				addToCornerList(gameEdge->getVoronoiEdge()->getPointA()->getAdjacent(),
+						gameEdge->getVoronoiEdge()->getPointB());
+				addToCornerList(gameEdge->getVoronoiEdge()->getPointB()->getAdjacent(),
+						gameEdge->getVoronoiEdge()->getPointA());
 			}
 
 			// if a delaunay point exists(in the case of map borders),
 			// add voronoi corners to the delaunay center's corner list
-			if(gameEdge->getDelaunayEdge().first){
-				addToCornerList(gameEdge->getDelaunayEdge().first->getCorners(),
-						gameEdge->getVoronoiEdge().first);
-				addToCornerList(gameEdge->getDelaunayEdge().first->getCorners(),
-						gameEdge->getVoronoiEdge().second);
+			if(gameEdge->getDelaunayEdge()->getPointA()){
+				addToCornerList(gameEdge->getDelaunayEdge()->getPointA()->getCorners(),
+						gameEdge->getVoronoiEdge()->getPointA());
+				addToCornerList(gameEdge->getDelaunayEdge()->getPointA()->getCorners(),
+						gameEdge->getVoronoiEdge()->getPointB());
 			}
 
-			if(gameEdge->getDelaunayEdge().second){
-				addToCornerList(gameEdge->getDelaunayEdge().second->getCorners(),
-						gameEdge->getVoronoiEdge().first);
-				addToCornerList(gameEdge->getDelaunayEdge().second->getCorners(),
-						gameEdge->getVoronoiEdge().second);
+			if(gameEdge->getDelaunayEdge()->getPointB()){
+				addToCornerList(gameEdge->getDelaunayEdge()->getPointB()->getCorners(),
+						gameEdge->getVoronoiEdge()->getPointA());
+				addToCornerList(gameEdge->getDelaunayEdge()->getPointB()->getCorners(),
+						gameEdge->getVoronoiEdge()->getPointB());
 			}
 
 			// if a voronoi point exists(in the case of map borders),
 			// add delaunay center to the voronoi corner's edge list
-			if(gameEdge->getVoronoiEdge().first){
-				addToCenterList(gameEdge->getVoronoiEdge().first->getTouches(),
-						gameEdge->getDelaunayEdge().first);
-				addToCenterList(gameEdge->getVoronoiEdge().first->getTouches(),
-						gameEdge->getDelaunayEdge().second);
+			if(gameEdge->getVoronoiEdge()->getPointA()){
+				addToCenterList(gameEdge->getVoronoiEdge()->getPointA()->getTouches(),
+						gameEdge->getDelaunayEdge()->getPointA());
+				addToCenterList(gameEdge->getVoronoiEdge()->getPointA()->getTouches(),
+						gameEdge->getDelaunayEdge()->getPointB());
 			}
-			if(gameEdge->getVoronoiEdge().second){
-				addToCenterList(gameEdge->getVoronoiEdge().second->getTouches(),
-						gameEdge->getDelaunayEdge().first);
-				addToCenterList(gameEdge->getVoronoiEdge().second->getTouches(),
-						gameEdge->getDelaunayEdge().second);
+			if(gameEdge->getVoronoiEdge()->getPointB()){
+				addToCenterList(gameEdge->getVoronoiEdge()->getPointB()->getTouches(),
+						gameEdge->getDelaunayEdge()->getPointA());
+				addToCenterList(gameEdge->getVoronoiEdge()->getPointB()->getTouches(),
+						gameEdge->getDelaunayEdge()->getPointB());
 			}
 		}
 
@@ -138,8 +138,8 @@ namespace VoronoiMap{
 			iter->second->getPolyShape().setPointCount(s);
 
 			CellEdge* e = iter->second->getPolyEdges()[0].get();
-			sf::Vector2f current = e->getVoronoiEdge().first->getPoint();
-			sf::Vector2f nextPoint = e->getVoronoiEdge().second->getPoint();
+			sf::Vector2f current = e->getVoronoiEdge()->getPointA()->getPoint();
+			sf::Vector2f nextPoint = e->getVoronoiEdge()->getPointB()->getPoint();
 			std::vector<CellEdge*> visited;
 
 			// walk corner points and construct polygon
@@ -148,12 +148,12 @@ namespace VoronoiMap{
 					break;
 				}
 				if(i > 0){
-					if(Center::checkEdgePoint(e->getVoronoiEdge().first->getPoint(), nextPoint)){
-						current = e->getVoronoiEdge().first->getPoint();
-						nextPoint = e->getVoronoiEdge().second->getPoint();
+					if(Center::checkEdgePoint(e->getVoronoiEdge()->getPointA()->getPoint(), nextPoint)){
+						current = e->getVoronoiEdge()->getPointA()->getPoint();
+						nextPoint = e->getVoronoiEdge()->getPointB()->getPoint();
 					}else{
-						current = e->getVoronoiEdge().second->getPoint();
-						nextPoint = e->getVoronoiEdge().first->getPoint();
+						current = e->getVoronoiEdge()->getPointB()->getPoint();
+						nextPoint = e->getVoronoiEdge()->getPointA()->getPoint();
 					}
 				}
 
@@ -349,9 +349,9 @@ namespace VoronoiMap{
 			next = nullptr;
 
 			for(auto e : current->getPolyEdges()){
-				Center* dEdgePoint = e->getDelaunayEdge().first.get();
+				Center* dEdgePoint = e->getDelaunayEdge()->getPointA().get();
 				if(dEdgePoint->getPoint() == current->getPoint() || !dEdgePoint){
-					dEdgePoint = e->getDelaunayEdge().second.get();
+					dEdgePoint = e->getDelaunayEdge()->getPointB().get();
 				}
 				if(dEdgePoint){
 					float nDist = calcDist(x, y, dEdgePoint->getPoint().x, dEdgePoint->getPoint().y);
@@ -372,20 +372,16 @@ namespace VoronoiMap{
 
 		return nullptr;
 	}
-	CornerPair VoronoiMap::createVoronoiEdge(Edge* e){
-		CornerPair vEdge;
+	std::shared_ptr<LineEdge<CellCorner>> VoronoiMap::createVoronoiEdge(Edge* e){
+		std::shared_ptr<LineEdge<CellCorner>> vEdge = std::make_shared<LineEdge<CellCorner>>();
 
 		if(e->vertA){
 			sf::Vector2f v1Point(e->vertA->x, e->vertA->y);
-			vEdge.first = createCorner(v1Point);
-		}else{
-			vEdge.first = nullptr;
+			vEdge->setPointA(createCorner(v1Point));
 		}
 		if(e->vertB){
 			sf::Vector2f v2Point(e->vertB->x, e->vertB->y);
-			vEdge.second = createCorner(v2Point);
-		}else{
-			vEdge.second = nullptr;
+			vEdge->setPointB(createCorner(v2Point));
 		}
 		return vEdge;
 	}
@@ -401,17 +397,13 @@ namespace VoronoiMap{
 		std::random_device rd;
 		gen = std::mt19937(rd());
 	}
-	CenterPair VoronoiMap::createDelaunayEdge(Edge* e){
-		CenterPair dEdge;
+	std::shared_ptr<LineEdge<Center>> VoronoiMap::createDelaunayEdge(Edge* e){
+		std::shared_ptr<LineEdge<Center>> dEdge = std::make_shared<LineEdge<Center>>();
 		if(e->lSite){
-			dEdge.first = allCenters[{e->lSite->p.x, e->lSite->p.y}];
-		}else{
-			dEdge.first = nullptr;
+			dEdge->setPointA(allCenters[{e->lSite->p.x, e->lSite->p.y}]);
 		}
 		if(e->rSite){
-			dEdge.second = allCenters[{e->rSite->p.x, e->rSite->p.y}];
-		}else{
-			dEdge.second = nullptr;
+			dEdge->setPointB(allCenters[{e->rSite->p.x, e->rSite->p.y}]);
 		}
 		return dEdge;
 	}
@@ -518,6 +510,8 @@ namespace VoronoiMap{
 			printf("\twater src moist: %f\n", c->wMoist);
 
 			printf("###################\n");
+		}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::LShift)){
+			printf("Clicked biome: %d\n", c->getBiome());
 		}else if(!firstPolyClicked){
 			firstPolyClicked = c;
 		}else{

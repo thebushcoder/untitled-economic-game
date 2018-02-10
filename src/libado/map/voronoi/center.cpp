@@ -15,8 +15,8 @@ namespace VoronoiMap{
 		for(auto e : polyEdges){
 			if(std::find(visited->begin(), visited->end(), e.get()) != visited->end()) continue;
 
-			CellCorner* vEdgeCorner1 = e->getVoronoiEdge().first.get();
-			CellCorner* vEdgeCorner2 = e->getVoronoiEdge().second.get();
+			CellCorner* vEdgeCorner1 = e->getVoronoiEdge()->getPointA().get();
+			CellCorner* vEdgeCorner2 = e->getVoronoiEdge()->getPointB().get();
 			if(checkEdgePoint(vEdgeCorner1->getPoint(), nextPoint)){
 				return e.get();
 			}else if(checkEdgePoint(vEdgeCorner2->getPoint(), nextPoint)){
@@ -35,10 +35,10 @@ namespace VoronoiMap{
 	}
 	CellEdge* Center::getDelEdge(Center* neighbour){
 		for(auto e : polyEdges){
-			if((e->getDelaunayEdge().first.get() == this ||
-					e->getDelaunayEdge().second.get() == this) &&
-					(e->getDelaunayEdge().first.get() == neighbour ||
-							e->getDelaunayEdge().second.get() == neighbour)){
+			if((e->getDelaunayEdge()->getPointA().get() == this ||
+					e->getDelaunayEdge()->getPointB().get() == this) &&
+					(e->getDelaunayEdge()->getPointA().get() == neighbour ||
+							e->getDelaunayEdge()->getPointB().get() == neighbour)){
 				return e.get();
 			}
 		}

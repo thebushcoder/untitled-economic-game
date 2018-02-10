@@ -124,8 +124,8 @@ namespace VoronoiMap{
 
 		std::shared_ptr<CellCorner> createCorner(sf::Vector2f point);
 
-		CenterPair createDelaunayEdge(Edge* e);
-		CornerPair createVoronoiEdge(Edge* e);
+		std::shared_ptr<LineEdge<Center>> createDelaunayEdge(Edge* e);
+		std::shared_ptr<LineEdge<CellCorner>> createVoronoiEdge(Edge* e);
 
 		void addToCornerList(std::vector<std::shared_ptr<CellCorner>>& list,
 				std::shared_ptr<CellCorner> c);

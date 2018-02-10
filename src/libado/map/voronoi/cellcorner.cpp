@@ -10,13 +10,19 @@
 namespace VoronoiMap{
 	CellEdge* CellCorner::getEdge(CellCorner* n){
 		for(auto e : protrudes){
-			if((e->getVoronoiEdge().first.get() == this ||
-					e->getVoronoiEdge().second.get() == this) &&
-					(e->getVoronoiEdge().first.get() == n ||
-							e->getVoronoiEdge().second.get() == n)){
+			if((e->getVoronoiEdge()->getPointA().get() == this ||
+					e->getVoronoiEdge()->getPointB().get() == this) &&
+					(e->getVoronoiEdge()->getPointA().get() == n ||
+							e->getVoronoiEdge()->getPointB().get() == n)){
 				return e.get();
 			}
 		}
 		return nullptr;
+	}
+	std::shared_ptr<River>& CellCorner::getRiver(){
+		return river;
+	}
+	void CellCorner::setRiver(std::shared_ptr<River> river) {
+		this->river = river;
 	}
 }
