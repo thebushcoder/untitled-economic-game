@@ -28,6 +28,7 @@
 #include "cellcorner.hpp"
 #include "celledge.hpp"
 #include "center.hpp"
+
 #include "../../util/lineShape.hpp"
 #include "../../util/FastNoise.h"
 
@@ -133,9 +134,7 @@ namespace VoronoiMap{
 				std::shared_ptr<Center> c);
 
 		float calcDist(float aX, float aY, float bX, float bY){
-			float dX = bX - aX;
-			float dY = bY - aY;
-			return std::sqrt(dX * dX + dY * dY);
+			return std::sqrt(std::pow(aX - bX, 2) + std::pow(aY - bY, 2));
 		}
 
 		///////////////////////////////////////////

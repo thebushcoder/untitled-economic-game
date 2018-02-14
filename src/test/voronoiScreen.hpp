@@ -25,6 +25,7 @@
 #include "../libado/screenManager.hpp"
 #include "../libado/map/voronoi/voronoiMap.hpp"
 #include "../libado/map/voronoi/terrainGeneration.hpp"
+#include "../libado/map/voronoi/noisyEdges.hpp"
 
 #include "../libado/entity/components/kingdomComponent.hpp"
 #include "../libado/entity/components/provincesComponent.hpp"

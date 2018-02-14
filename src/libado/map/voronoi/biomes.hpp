@@ -16,7 +16,6 @@ namespace Biomes{
 		GRASSLAND,
 		FOREST,
 		RAIN_FOREST,
-		SCRUBLAND,
 		ROCKY_MOUNT,
 		SNOWY_MOUNT,
 		LAKE
@@ -38,10 +37,6 @@ namespace Biomes{
 			break;
 		case RAIN_FOREST:
 			return sf::Color(15, 71, 27);
-			break;
-		case SCRUBLAND:
-//			return sf::Color(57, 106, 68);
-			return sf::Color::Magenta;
 			break;
 		case ROCKY_MOUNT:
 			return sf::Color(77, 77, 77);

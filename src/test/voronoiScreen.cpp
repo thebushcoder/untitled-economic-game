@@ -19,6 +19,7 @@ void VoronoiScreen::init(){
 	VoronoiMap::TerrainGeneration::generateRivers(voronoiDiagram);
 	VoronoiMap::TerrainGeneration::generateMoisture(voronoiDiagram);
 	VoronoiMap::TerrainGeneration::generateBiomes(voronoiDiagram);
+	VoronoiMap::NoisyEdges::getInstance()->generateNoisyEdges(voronoiDiagram);
 //	voronoiDiagram->assignPolyColours();
 
 	entityWorld = std::make_shared<anax::World>();

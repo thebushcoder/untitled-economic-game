@@ -179,10 +179,16 @@ namespace VoronoiMap{
 		}
 		// draw rivers
 		for(auto e : edges){
-			if(!e->getVorLine()){
-				continue;
+			if(!e->isRiver()) continue;
+
+			if(e->getNoisyLine().size() > 0){
+				for(int i = 0; i < e->getNoisyLine().size(); ++i){
+					sf::LineShape* line = e->getNoisyLine()[i].get();
+					window->draw(*line);
+				}
+			}else{
+				window->draw(*e->getVorLine());
 			}
-			window->draw(*e->getVorLine());
 		}
 	}
 
@@ -512,6 +518,12 @@ namespace VoronoiMap{
 			printf("###################\n");
 		}else if(sf::Keyboard::isKeyPressed(sf::Keyboard::LShift)){
 			printf("Clicked biome: %d\n", c->getBiome());
+			for(auto e : c->getPolyEdges()){
+				auto a = e->getVoronoiEdge()->getPointA()->getPoint();
+				auto b = e->getVoronoiEdge()->getPointB()->getPoint();
+				printf("\tVoronoi Edge length: %f\n", calcDist(a.x, a.y, b.x, b.y));
+			}
+
 		}else if(!firstPolyClicked){
 			firstPolyClicked = c;
 		}else{

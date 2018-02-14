@@ -8,6 +8,7 @@
 #ifndef LIBADO_MAP_VORONOI_CELLEDGE_HPP_
 #define LIBADO_MAP_VORONOI_CELLEDGE_HPP_
 
+#include <memory>
 #include "cellcorner.hpp"
 #include "center.hpp"
 #include "../../util/lineShape.hpp"
@@ -85,6 +86,17 @@ public:
 		bool hasCorner(CellCorner* c){
 			return (voronoiEdge->getPointA().get() == c) || (voronoiEdge->getPointB().get() == c);
 		}
+		std::vector<std::unique_ptr<sf::LineShape>>& getNoisyLine() {
+			return noisyLine;
+		}
+		void setNoisyLine(std::unique_ptr<sf::LineShape> line) {
+			line->setFillColor(sf::Color::Blue);
+			if(riverSize > line->getThickness()){
+				line->setThickness(riverSize > 4 ? 3 : riverSize);
+			}
+			this->noisyLine.emplace_back(std::move(line));
+		}
+
 private:
 		void calcMidpoint();
 
@@ -92,6 +104,9 @@ private:
 		std::shared_ptr<LineEdge<CellCorner>> voronoiEdge;	// a polygon outline edge
 		std::unique_ptr<sf::LineShape> delLine;
 		std::unique_ptr<sf::LineShape> vorLine;
+
+		std::vector<std::unique_ptr<sf::LineShape>> noisyLine;
+
 		sf::Vector2f midPoint;
 		int riverSize = 0;
 	};
