@@ -48,6 +48,78 @@ namespace VoronoiMap{
 
 			}
 		}
+		void generateNoisyPolys(VoronoiMap* map){
+			printf("&&&&&&&&&&&&&&&&&&&&&&&\n");
+			for(auto iter = map->getAllCenters().begin(); iter != map->getAllCenters().end(); ++iter){
+				int s = 0;
+				for(auto e : iter->second->getPolyEdges()){
+					float pts = 0;
+
+					printf("Edge noisy line count : %d\n", e->getNoisyLine().size());
+
+					if(e->getNoisyLine().size() > 0){
+						pts = e->getNoisyLine().size();
+					}else{
+						pts = 1;
+					}
+					s += pts;
+				}
+
+				printf("\tEdge poly point count : %d\n", s);
+
+				iter->second->resetPolyShape();
+
+				iter->second->getPolyShape().setPointCount(s);
+
+				CellEdge* e = iter->second->getPolyEdges()[0].get();
+				sf::Vector2f current = e->getVoronoiEdge()->getPointA()->getPoint();
+				sf::Vector2f nextPoint = e->getVoronoiEdge()->getPointB()->getPoint();
+				std::vector<CellEdge*> visited;
+
+				int count = 0;
+				// walk corner points and construct polygon
+				for(int i = 0; i < s; ++i){
+					if(!e)	break;
+
+					if(i > 0){
+						if(Center::checkEdgePoint(e->getVoronoiEdge()->getPointA()->getPoint(), nextPoint)){
+							current = e->getVoronoiEdge()->getPointA()->getPoint();
+							nextPoint = e->getVoronoiEdge()->getPointB()->getPoint();
+						}else{
+							current = e->getVoronoiEdge()->getPointB()->getPoint();
+							nextPoint = e->getVoronoiEdge()->getPointA()->getPoint();
+						}
+					}
+
+					if(e->getNoisyLine().size() > 0){
+
+						int lineX = std::floor(e->getNoisyLine()[0]->getPointA().x);
+						int lineY = std::floor(e->getNoisyLine()[0]->getPointA().y);
+						int currentX = std::floor(current.x);
+						int currentY = std::floor(current.y);
+
+						if(lineX == currentX && lineY == currentY){
+
+							for(int x = 0; x < e->getNoisyLine().size(); ++x){
+								iter->second->getPolyShape().setPoint(count++,
+										e->getNoisyLine()[x]->getPointA());
+							}
+						}else{
+
+							for(int x = e->getNoisyLine().size() - 1; x >= 0; --x){
+								iter->second->getPolyShape().setPoint(count++,
+										e->getNoisyLine()[x]->getPointB());
+							}
+						}
+					}else{
+						iter->second->getPolyShape().setPoint(count++, current);
+					}
+
+					visited.push_back(e);
+					e = iter->second->getNextVorEdge(&visited, nextPoint);
+				}
+			}
+		}
 		static NoisyEdges* getInstance(){
 			static std::unique_ptr<NoisyEdges> instance;
 			if(!instance){
@@ -113,7 +185,7 @@ namespace VoronoiMap{
 			return mid;
 		}
 
-		static const int subDivideNum = std::pow(2, 2) + 1;	//2^2 = 4
+		static const int subDivideNum = std::pow(2, 2);	//2^2 = 4
 
 		std::vector<std::pair<sf::Vector2f, float>> list;
 		CellEdge* current;

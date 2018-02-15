@@ -42,6 +42,9 @@ namespace VoronoiMap{
 		sf::ConvexShape& getPolyShape() {
 			return *polyShape;
 		}
+		void resetPolyShape(){
+			polyShape.reset(new sf::ConvexShape());
+		}
 		void addNeighbour(std::shared_ptr<Center> n){
 			neighbours.push_back(n);
 		}

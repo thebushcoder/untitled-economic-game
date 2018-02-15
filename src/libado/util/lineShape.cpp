@@ -12,7 +12,7 @@ namespace sf
 {
 
 LineShape::LineShape(const Vector2f& point1, const Vector2f& point2):
-    m_direction(point2 - point1)
+    m_direction(point2 - point1), pointA(point1), pointB(point2)
 {
     setPosition(point1);
     setThickness(2.f);
@@ -31,6 +31,12 @@ float LineShape::getThickness() const
     return m_thickness;
 }
 
+Vector2f LineShape::getPointA(){
+	return pointA;
+}
+Vector2f LineShape::getPointB(){
+	return pointB;
+}
 
 float LineShape::getLength() const
 {

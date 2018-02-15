@@ -86,7 +86,7 @@ public:
 		bool hasCorner(CellCorner* c){
 			return (voronoiEdge->getPointA().get() == c) || (voronoiEdge->getPointB().get() == c);
 		}
-		std::vector<std::unique_ptr<sf::LineShape>>& getNoisyLine() {
+		const std::vector<std::unique_ptr<sf::LineShape>>& getNoisyLine() {
 			return noisyLine;
 		}
 		void setNoisyLine(std::unique_ptr<sf::LineShape> line) {

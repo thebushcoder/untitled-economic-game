@@ -14,12 +14,14 @@ void VoronoiScreen::init(){
 
 	voronoiDiagram = new VoronoiMap::VoronoiMap(numSites, w, h);
 
+	VoronoiMap::NoisyEdges::getInstance()->generateNoisyEdges(voronoiDiagram);
+	VoronoiMap::NoisyEdges::getInstance()->generateNoisyPolys(voronoiDiagram);
 	VoronoiMap::TerrainGeneration::generateWater(voronoiDiagram);
 	VoronoiMap::TerrainGeneration::generateElevation(voronoiDiagram);
 	VoronoiMap::TerrainGeneration::generateRivers(voronoiDiagram);
 	VoronoiMap::TerrainGeneration::generateMoisture(voronoiDiagram);
 	VoronoiMap::TerrainGeneration::generateBiomes(voronoiDiagram);
-	VoronoiMap::NoisyEdges::getInstance()->generateNoisyEdges(voronoiDiagram);
+
 //	voronoiDiagram->assignPolyColours();
 
 	entityWorld = std::make_shared<anax::World>();

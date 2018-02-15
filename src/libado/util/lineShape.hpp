@@ -18,13 +18,17 @@ namespace sf
 
 		float getLength() const;
 
+		Vector2f getPointA();
+		Vector2f getPointB();
+
 		virtual std::size_t getPointCount() const;
 
 		virtual Vector2f getPoint(std::size_t index) const;
 		private :
 
-    Vector2f m_direction; ///< Direction of the line
-    float m_thickness;    ///< Thickness of the line
+		Vector2f pointA, pointB;
+		Vector2f m_direction; ///< Direction of the line
+		float m_thickness;    ///< Thickness of the line
 };
 
 } // namespace sf
