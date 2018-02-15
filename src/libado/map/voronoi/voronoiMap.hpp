@@ -60,6 +60,7 @@ namespace VoronoiMap{
 		void toggleKingdomDraw();
 		void toggleElevationDraw();
 		void toggleMoistureDraw();
+		void toggleNoisyEdges();
 
 		void assignPolyColours();
 
@@ -164,6 +165,8 @@ namespace VoronoiMap{
 		bool drawKingdoms = false;
 		bool drawElevation = false;
 		bool drawMoisture = false;
+
+		bool drawNoisy = true;
 
 		Center* firstPolyClicked = nullptr;
 		Center* lastCenter = nullptr;

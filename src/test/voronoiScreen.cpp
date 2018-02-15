@@ -10,7 +10,7 @@
 void VoronoiScreen::init(){
 	status = RUNNING;
 
-	int numSites = 800, w = 1600, h = 1024;
+	int numSites = 1600, w = 1600, h = 1024;
 
 	voronoiDiagram = new VoronoiMap::VoronoiMap(numSites, w, h);
 
@@ -47,28 +47,19 @@ void VoronoiScreen::init(){
 
 	KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, voronoiDiagram);
 
-	input.getMap()["relax_diagram"] = thor::Action(sf::Keyboard::F1, thor::Action::PressOnce);
-	input.getActionSys().connect("relax_diagram", std::bind([this]{
-		voronoiDiagram->relaxDiagram();
-		VoronoiMap::TerrainGeneration::generateWater(voronoiDiagram);
-		VoronoiMap::TerrainGeneration::generateElevation(voronoiDiagram);
-		VoronoiMap::TerrainGeneration::generateRivers(voronoiDiagram);
-		VoronoiMap::TerrainGeneration::generateMoisture(voronoiDiagram);
-		VoronoiMap::TerrainGeneration::generateBiomes(voronoiDiagram);
-//		voronoiDiagram->assignPolyColours();
-		KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, voronoiDiagram);
-	}));
-
 	input.getMap()["gen_diagram"] = thor::Action(sf::Keyboard::F2, thor::Action::PressOnce);
 	input.getActionSys().connect("gen_diagram", std::bind([numSites, this]{
 		voronoiDiagram->reset();
 		voronoiDiagram->generateNewMap(numSites);
+
+		VoronoiMap::NoisyEdges::getInstance()->generateNoisyEdges(voronoiDiagram);
+		VoronoiMap::NoisyEdges::getInstance()->generateNoisyPolys(voronoiDiagram);
 		VoronoiMap::TerrainGeneration::generateWater(voronoiDiagram);
 		VoronoiMap::TerrainGeneration::generateElevation(voronoiDiagram);
 		VoronoiMap::TerrainGeneration::generateRivers(voronoiDiagram);
 		VoronoiMap::TerrainGeneration::generateMoisture(voronoiDiagram);
 		VoronoiMap::TerrainGeneration::generateBiomes(voronoiDiagram);
-//		voronoiDiagram->assignPolyColours();
+
 		KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, voronoiDiagram);
 	}));
 
@@ -85,6 +76,11 @@ void VoronoiScreen::init(){
 	input.getMap()["toggle_moisture"] = thor::Action(sf::Keyboard::F5, thor::Action::PressOnce);
 	input.getActionSys().connect("toggle_moisture", std::bind([this]{
 		voronoiDiagram->toggleMoistureDraw();
+	}));
+
+	input.getMap()["toggle_noisy"] = thor::Action(sf::Keyboard::F6, thor::Action::PressOnce);
+	input.getActionSys().connect("toggle_noisy", std::bind([this]{
+		voronoiDiagram->toggleNoisyEdges();
 	}));
 
 	input.getMap()["mouse_moved"] = thor::Action(sf::Event::MouseMoved);

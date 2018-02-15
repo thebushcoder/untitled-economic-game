@@ -49,13 +49,10 @@ namespace VoronoiMap{
 			}
 		}
 		void generateNoisyPolys(VoronoiMap* map){
-			printf("&&&&&&&&&&&&&&&&&&&&&&&\n");
 			for(auto iter = map->getAllCenters().begin(); iter != map->getAllCenters().end(); ++iter){
 				int s = 0;
 				for(auto e : iter->second->getPolyEdges()){
 					float pts = 0;
-
-					printf("Edge noisy line count : %d\n", e->getNoisyLine().size());
 
 					if(e->getNoisyLine().size() > 0){
 						pts = e->getNoisyLine().size();
@@ -65,11 +62,7 @@ namespace VoronoiMap{
 					s += pts;
 				}
 
-				printf("\tEdge poly point count : %d\n", s);
-
-				iter->second->resetPolyShape();
-
-				iter->second->getPolyShape().setPointCount(s);
+				iter->second->getNoisyPoly().setPointCount(s);
 
 				CellEdge* e = iter->second->getPolyEdges()[0].get();
 				sf::Vector2f current = e->getVoronoiEdge()->getPointA()->getPoint();
@@ -101,18 +94,18 @@ namespace VoronoiMap{
 						if(lineX == currentX && lineY == currentY){
 
 							for(int x = 0; x < e->getNoisyLine().size(); ++x){
-								iter->second->getPolyShape().setPoint(count++,
+								iter->second->getNoisyPoly().setPoint(count++,
 										e->getNoisyLine()[x]->getPointA());
 							}
 						}else{
 
 							for(int x = e->getNoisyLine().size() - 1; x >= 0; --x){
-								iter->second->getPolyShape().setPoint(count++,
+								iter->second->getNoisyPoly().setPoint(count++,
 										e->getNoisyLine()[x]->getPointB());
 							}
 						}
 					}else{
-						iter->second->getPolyShape().setPoint(count++, current);
+						iter->second->getNoisyPoly().setPoint(count++, current);
 					}
 
 					visited.push_back(e);

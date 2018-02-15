@@ -20,9 +20,8 @@ namespace VoronoiMap{
 	class CellCorner;
 	class Center{
 	public:
-		Center(sf::Vector2f point) : point(point), polyShape(new sf::ConvexShape()){
-//			polyShape->setOutlineThickness(2);
-		}
+		Center(sf::Vector2f point) : point(point), linePoly(new sf::ConvexShape()),
+			noisyPoly(new sf::ConvexShape()){}
 		~Center(){}
 
 		CellEdge* getNextVorEdge(std::vector<CellEdge*>* visited, sf::Vector2f nextPoint);
@@ -39,11 +38,11 @@ namespace VoronoiMap{
 		std::vector<std::shared_ptr<CellEdge>>& getPolyEdges() {
 			return polyEdges;
 		}
-		sf::ConvexShape& getPolyShape() {
-			return *polyShape;
+		sf::ConvexShape& getLinePoly() {
+			return *linePoly;
 		}
-		void resetPolyShape(){
-			polyShape.reset(new sf::ConvexShape());
+		sf::ConvexShape& getNoisyPoly() {
+			return *noisyPoly;
 		}
 		void addNeighbour(std::shared_ptr<Center> n){
 			neighbours.push_back(n);
@@ -65,10 +64,16 @@ namespace VoronoiMap{
 		}
 		void setColour(sf::Color c){
 			shapeCol = c;
-			polyShape->setFillColor(c);
+			linePoly->setFillColor(c);
+			noisyPoly->setFillColor(c);
+		}
+		void setPolyColour(sf::Color c){
+			linePoly->setFillColor(c);
+			noisyPoly->setFillColor(c);
 		}
 		void reApplyColour(){
-			polyShape->setFillColor(shapeCol);
+			linePoly->setFillColor(shapeCol);
+			noisyPoly->setFillColor(shapeCol);
 		}
 		KingdomUtil::KingdomType getOwner(){
 			return owner;
@@ -137,7 +142,8 @@ namespace VoronoiMap{
 		std::vector<std::shared_ptr<CellEdge>> polyEdges;
 		std::vector<std::shared_ptr<CellCorner>> corners;
 
-		std::unique_ptr<sf::ConvexShape> polyShape;
+		std::unique_ptr<sf::ConvexShape> linePoly;
+		std::unique_ptr<sf::ConvexShape> noisyPoly;
 		sf::Color shapeCol;
 
 		Biomes::Biome biome;

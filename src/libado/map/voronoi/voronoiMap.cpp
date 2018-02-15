@@ -135,7 +135,7 @@ namespace VoronoiMap{
 			int s = iter->second->getPolyEdges().size();
 			if(s <= 0) continue;
 
-			iter->second->getPolyShape().setPointCount(s);
+			iter->second->getLinePoly().setPointCount(s);
 
 			CellEdge* e = iter->second->getPolyEdges()[0].get();
 			sf::Vector2f current = e->getVoronoiEdge()->getPointA()->getPoint();
@@ -157,7 +157,7 @@ namespace VoronoiMap{
 					}
 				}
 
-				iter->second->getPolyShape().setPoint(i, current);
+				iter->second->getLinePoly().setPoint(i, current);
 
 				visited.push_back(e);
 				e = iter->second->getNextVorEdge(&visited, nextPoint);
@@ -170,9 +170,13 @@ namespace VoronoiMap{
 		// draw polygons
 		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
 
-			window->draw(iter->second->getPolyShape());
+			if(drawNoisy){
+				window->draw(iter->second->getNoisyPoly());
+			}else{
+				window->draw(iter->second->getLinePoly());
+			}
 
-			sf::RectangleShape point(sf::Vector2f(4, 4));
+			sf::RectangleShape point(sf::Vector2f(2, 2));
 			point.setPosition(iter->second->getPoint());
 			point.setFillColor(sf::Color::White);
 			window->draw(point);
@@ -213,25 +217,25 @@ namespace VoronoiMap{
 			for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
 				if(iter->second->getElevation() < 0.0){
 					sf::Color colour(255, 0, 0);
-					iter->second->getPolyShape().setFillColor(colour);
+					iter->second->setPolyColour(colour);
 				}else if(iter->second->getElevation() == 0.0){
 					sf::Color colour(0, 0, 0);
-					iter->second->getPolyShape().setFillColor(colour);
+					iter->second->setPolyColour(colour);
 				}else if(iter->second->getElevation() <= 0.2){
 					sf::Color colour(50, 50, 50);
-					iter->second->getPolyShape().setFillColor(colour);
+					iter->second->setPolyColour(colour);
 				}else if(iter->second->getElevation() <= 0.4){
 					sf::Color colour(100, 100, 100);
-					iter->second->getPolyShape().setFillColor(colour);
+					iter->second->setPolyColour(colour);
 				}else if(iter->second->getElevation() <= 0.6){
 					sf::Color colour(165, 165, 165);
-					iter->second->getPolyShape().setFillColor(colour);
+					iter->second->setPolyColour(colour);
 				}else if(iter->second->getElevation() <= 0.8){
 					sf::Color colour(200, 200, 200);
-					iter->second->getPolyShape().setFillColor(colour);
+					iter->second->setPolyColour(colour);
 				}else if(iter->second->getElevation() <= 1.0){
 					sf::Color colour(255, 255, 255);
-					iter->second->getPolyShape().setFillColor(colour);
+					iter->second->setPolyColour(colour);
 				}
 			}
 			drawElevation = true;
@@ -247,23 +251,23 @@ namespace VoronoiMap{
 			for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
 				if(iter->second->getMoisture() <= 0.0){
 					sf::Color colour(0, 0, 0);
-					iter->second->getPolyShape().setFillColor(colour);
+					iter->second->setPolyColour(colour);
 				}else if(iter->second->getMoisture() <= 0.2){
 					sf::Color colour(0, 0, 50);
-					iter->second->getPolyShape().setFillColor(colour);
+					iter->second->setPolyColour(colour);
 				}else if(iter->second->getMoisture() <= 0.4){
 					sf::Color colour(0, 0, 100);
-					iter->second->getPolyShape().setFillColor(colour);
+					iter->second->setPolyColour(colour);
 				}else if(iter->second->getMoisture() <= 0.6){
 					sf::Color colour(0, 0, 165);
-					iter->second->getPolyShape().setFillColor(colour);
+					iter->second->setPolyColour(colour);
 				}else if(iter->second->getMoisture() <= 0.8){
 					sf::Color colour(0, 0, 200);
-					iter->second->getPolyShape().setFillColor(colour);
+					iter->second->setPolyColour(colour);
 				}else if(iter->second->getMoisture() <= 1.0 ||
 						iter->second->getMoisture() > 1.0){
 					sf::Color colour(0, 0, 255);
-					iter->second->getPolyShape().setFillColor(colour);
+					iter->second->setPolyColour(colour);
 				}
 			}
 			drawMoisture = true;
@@ -274,6 +278,9 @@ namespace VoronoiMap{
 			drawMoisture = false;
 		}
 	}
+	void VoronoiMap::toggleNoisyEdges(){
+		drawNoisy = !drawNoisy;
+	}
 
 	void VoronoiMap::toggleKingdomDraw(){
 		if(!drawKingdoms){
@@ -282,25 +289,25 @@ namespace VoronoiMap{
 				case KingdomUtil::KingdomType::HUMAN:
 				{
 					sf::Color orange(255, 179, 102);
-					iter->second->getPolyShape().setFillColor(orange);
+					iter->second->setPolyColour(orange);
 					break;
 				}
 				case KingdomUtil::KingdomType::DWARF:
 				{
 					sf::Color blue(102, 163, 255);
-					iter->second->getPolyShape().setFillColor(blue);
+					iter->second->setPolyColour(blue);
 					break;
 				}
 				case KingdomUtil::KingdomType::ELF:
 				{
 					sf::Color green(77, 255, 77);
-					iter->second->getPolyShape().setFillColor(green);
+					iter->second->setPolyColour(green);
 					break;
 				}
 				case KingdomUtil::KingdomType::REPUB:
 				{
 					sf::Color red(255, 102, 102);
-					iter->second->getPolyShape().setFillColor(red);
+					iter->second->setPolyColour(red);
 					break;
 				}
 				}
@@ -319,7 +326,7 @@ namespace VoronoiMap{
 			if(c && c != mouseOver){
 				if(mouseOver) mouseOver->reApplyColour();
 
-				c->getPolyShape().setFillColor(highlightColour);
+				c->setPolyColour(highlightColour);
 				mouseOver = c;
 			}
 		}else if(mouseOver){
