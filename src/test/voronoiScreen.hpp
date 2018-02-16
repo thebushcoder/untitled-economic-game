@@ -44,7 +44,8 @@ public:
 	void handleInput(sf::Time& delta);
 	void loadResources();
 private:
-	VoronoiMap::VoronoiMap* voronoiDiagram = nullptr;
+	std::unique_ptr<VoronoiMap::VoronoiMap> terrainVorDia = nullptr;
+	std::unique_ptr<VoronoiMap::VoronoiMap> provinceVorDia = nullptr;
 
 	std::shared_ptr<anax::World> entityWorld;
 	std::map<KingdomUtil::KingdomType, anax::Entity> kingdoms;

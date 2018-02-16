@@ -123,13 +123,7 @@ namespace VoronoiMap{
 
 		// fill sinks - erodes terrain to make rivers look more natural
 		// Ref: (function fillSinks(h, epsilon)) https://github.com/mewo2/terrain/blob/master/terrain.js
-		/*
-		 *  There's an obvious problem when we reach gridpoints which are lower than all
-		 *  of their neighbours. Do we route the water back uphill? This will probably
-		 *  lead to cycles in the water system, which are trouble. Instead, we want to
-		 *  fill in these gaps (often called sinks or depressions), so that the water
-		 *  always runs downhill all the way to the edge.
-		 */
+
 		std::map<std::pair<float, float>, float> newHeightmap;
 		std::queue<CellCorner*> front;
 
@@ -342,15 +336,6 @@ namespace VoronoiMap{
 			}
 		}
 
-//		while(allRivers.size() > 4){
-//			std::uniform_int_distribution<> riverRnd(0, allRivers.size() - 1);
-//
-//			auto iter = allRivers.begin();
-//			std::advance(iter, riverRnd(map->getRandGen()));
-//
-//			allRivers.erase(iter);
-//		}
-
 		for(auto r : allRivers){
 			std::queue<CellCorner*> rFront;
 			r->getRiverEnd()->setRiver(r);
@@ -395,8 +380,6 @@ namespace VoronoiMap{
 										iter->second->getPoint().y));
 
 			iter->second->nMoist = moist;
-//				printf("=======================\n");
-//				printf("Perlin moisture : %f\n", moist);
 
 			// moisture falls off with elevation (higher rainfall with higher elev)
 			// 0.7 is snowy mountain peak. need to redo elev-moisture balance
@@ -537,5 +520,3 @@ namespace VoronoiMap{
 		}
 	}
 }
-
-

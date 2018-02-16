@@ -62,7 +62,7 @@ namespace VoronoiMap{
 		void toggleMoistureDraw();
 		void toggleNoisyEdges();
 
-		void assignPolyColours();
+		void assignKingdomColours();
 
 		void mouseClick(float x, float y);
 
@@ -116,6 +116,9 @@ namespace VoronoiMap{
 		}
 		std::mt19937& getRandGen(){
 			return gen;
+		}
+		bool isDrawingKingdoms(){
+			return drawKingdoms;
 		}
 	private:
 		std::shared_ptr<std::vector<Point2>> generateCellPoints(int numCells);

@@ -10,19 +10,22 @@
 void VoronoiScreen::init(){
 	status = RUNNING;
 
-	int numSites = 1600, w = 1600, h = 1024;
+	int numSites = 1800, w = 1600, h = 1024;
 
-	voronoiDiagram = new VoronoiMap::VoronoiMap(numSites, w, h);
+	terrainVorDia = std::unique_ptr<VoronoiMap::VoronoiMap>(
+			new VoronoiMap::VoronoiMap(numSites, w, h));
 
-	VoronoiMap::NoisyEdges::getInstance()->generateNoisyEdges(voronoiDiagram);
-	VoronoiMap::NoisyEdges::getInstance()->generateNoisyPolys(voronoiDiagram);
-	VoronoiMap::TerrainGeneration::generateWater(voronoiDiagram);
-	VoronoiMap::TerrainGeneration::generateElevation(voronoiDiagram);
-	VoronoiMap::TerrainGeneration::generateRivers(voronoiDiagram);
-	VoronoiMap::TerrainGeneration::generateMoisture(voronoiDiagram);
-	VoronoiMap::TerrainGeneration::generateBiomes(voronoiDiagram);
+	provinceVorDia = std::unique_ptr<VoronoiMap::VoronoiMap>(
+			new VoronoiMap::VoronoiMap(200, w, h));
+	provinceVorDia->toggleNoisyEdges();
 
-//	voronoiDiagram->assignPolyColours();
+	VoronoiMap::NoisyEdges::getInstance()->generateNoisyEdges(terrainVorDia.get());
+	VoronoiMap::NoisyEdges::getInstance()->generateNoisyPolys(terrainVorDia.get());
+	VoronoiMap::TerrainGeneration::generateWater(terrainVorDia.get());
+	VoronoiMap::TerrainGeneration::generateElevation(terrainVorDia.get());
+	VoronoiMap::TerrainGeneration::generateRivers(terrainVorDia.get());
+	VoronoiMap::TerrainGeneration::generateMoisture(terrainVorDia.get());
+	VoronoiMap::TerrainGeneration::generateBiomes(terrainVorDia.get());
 
 	entityWorld = std::make_shared<anax::World>();
 	anax::Entity k = entityWorld->createEntity();
@@ -45,56 +48,60 @@ void VoronoiScreen::init(){
 	k.addComponent<ProvincesComponent>();
 	kingdoms[KingdomUtil::KingdomType::REPUB] = k;
 
-	KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, voronoiDiagram);
+	KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, provinceVorDia.get());
+	provinceVorDia->assignKingdomColours();
 
 	input.getMap()["gen_diagram"] = thor::Action(sf::Keyboard::F2, thor::Action::PressOnce);
 	input.getActionSys().connect("gen_diagram", std::bind([numSites, this]{
-		voronoiDiagram->reset();
-		voronoiDiagram->generateNewMap(numSites);
+		terrainVorDia->reset();
+		provinceVorDia->reset();
+		terrainVorDia->generateNewMap(numSites);
+		provinceVorDia->generateNewMap(200);
 
-		VoronoiMap::NoisyEdges::getInstance()->generateNoisyEdges(voronoiDiagram);
-		VoronoiMap::NoisyEdges::getInstance()->generateNoisyPolys(voronoiDiagram);
-		VoronoiMap::TerrainGeneration::generateWater(voronoiDiagram);
-		VoronoiMap::TerrainGeneration::generateElevation(voronoiDiagram);
-		VoronoiMap::TerrainGeneration::generateRivers(voronoiDiagram);
-		VoronoiMap::TerrainGeneration::generateMoisture(voronoiDiagram);
-		VoronoiMap::TerrainGeneration::generateBiomes(voronoiDiagram);
+		VoronoiMap::NoisyEdges::getInstance()->generateNoisyEdges(terrainVorDia.get());
+		VoronoiMap::NoisyEdges::getInstance()->generateNoisyPolys(terrainVorDia.get());
+		VoronoiMap::TerrainGeneration::generateWater(terrainVorDia.get());
+		VoronoiMap::TerrainGeneration::generateElevation(terrainVorDia.get());
+		VoronoiMap::TerrainGeneration::generateRivers(terrainVorDia.get());
+		VoronoiMap::TerrainGeneration::generateMoisture(terrainVorDia.get());
+		VoronoiMap::TerrainGeneration::generateBiomes(terrainVorDia.get());
 
-		KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, voronoiDiagram);
+		KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, provinceVorDia.get());
+		provinceVorDia->assignKingdomColours();
 	}));
 
 	input.getMap()["toggle_kingdoms"] = thor::Action(sf::Keyboard::F3, thor::Action::PressOnce);
 	input.getActionSys().connect("toggle_kingdoms", std::bind([this]{
-		voronoiDiagram->toggleKingdomDraw();
+		provinceVorDia->toggleKingdomDraw();
 	}));
 
 	input.getMap()["toggle_elevation"] = thor::Action(sf::Keyboard::F4, thor::Action::PressOnce);
 	input.getActionSys().connect("toggle_elevation", std::bind([this]{
-		voronoiDiagram->toggleElevationDraw();
+		terrainVorDia->toggleElevationDraw();
 	}));
 
 	input.getMap()["toggle_moisture"] = thor::Action(sf::Keyboard::F5, thor::Action::PressOnce);
 	input.getActionSys().connect("toggle_moisture", std::bind([this]{
-		voronoiDiagram->toggleMoistureDraw();
+		terrainVorDia->toggleMoistureDraw();
 	}));
 
 	input.getMap()["toggle_noisy"] = thor::Action(sf::Keyboard::F6, thor::Action::PressOnce);
 	input.getActionSys().connect("toggle_noisy", std::bind([this]{
-		voronoiDiagram->toggleNoisyEdges();
+		terrainVorDia->toggleNoisyEdges();
 	}));
 
 	input.getMap()["mouse_moved"] = thor::Action(sf::Event::MouseMoved);
 	input.getActionSys().connect("mouse_moved", std::bind([this]{
 		sf::Vector2i p = sf::Mouse::getPosition(*manager->getWindow());
 
-		voronoiDiagram->mouseMoved(p.x, p.y);
+		provinceVorDia->mouseMoved(p.x, p.y);
 	}));
 
 	input.getMap()["mouse_clicked"] = thor::Action(sf::Mouse::Left, thor::Action::PressOnce);
 	input.getActionSys().connect("mouse_clicked", std::bind([this]{
 		sf::Vector2i p = sf::Mouse::getPosition(*manager->getWindow());
 
-		voronoiDiagram->mouseClick(p.x, p.y);
+		terrainVorDia->mouseClick(p.x, p.y);
 	}));
 }
 int VoronoiScreen::run(){
@@ -126,7 +133,10 @@ void VoronoiScreen::render(sf::Time& delta){
 	manager->getWindow()->clear(sf::Color::Black);
 
 
-	voronoiDiagram->draw(manager->getWindow());
+	terrainVorDia->draw(manager->getWindow());
+	if(provinceVorDia->isDrawingKingdoms()){
+		provinceVorDia->draw(manager->getWindow());
+	}
 
 	manager->getGui()->draw();
 

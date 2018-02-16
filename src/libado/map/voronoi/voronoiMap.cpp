@@ -162,7 +162,7 @@ namespace VoronoiMap{
 				visited.push_back(e);
 				e = iter->second->getNextVorEdge(&visited, nextPoint);
 			}
-			iter->second->setColour(sf::Color(51, 102, 0));
+//			iter->second->setColour(sf::Color(51, 102, 0));
 		}
 	}
 
@@ -196,18 +196,33 @@ namespace VoronoiMap{
 		}
 	}
 
-	void VoronoiMap::assignPolyColours(){
-		// default tile colour is green(grass)
+	void VoronoiMap::assignKingdomColours(){
 		for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
-			// colour coast yellow(sand)
-			if(iter->second->isCoast() && !iter->second->isWater() && iter->second->getElevation() <= 0.50){
-				iter->second->setColour(sf::Color(204, 204, 0));
-			// colour mountain peaks / high mountains - near white(snow capped peaks)
-			}else if(iter->second->getElevation() >= 0.70){
-				iter->second->setColour(sf::Color(200, 200, 200));
-			// colour low mountains dark grey(stone)
-			}else if(iter->second->getElevation() >= 0.56){
-				iter->second->setColour(sf::Color(77, 77, 77));
+			switch(iter->second->getOwner()){
+			case KingdomUtil::KingdomType::HUMAN:
+			{
+				sf::Color orange(255, 179, 102, 185);
+				iter->second->setColour(orange);
+				break;
+			}
+			case KingdomUtil::KingdomType::DWARF:
+			{
+				sf::Color blue(102, 163, 255, 185);
+				iter->second->setColour(blue);
+				break;
+			}
+			case KingdomUtil::KingdomType::ELF:
+			{
+				sf::Color green(77, 255, 77, 185);
+				iter->second->setColour(green);
+				break;
+			}
+			case KingdomUtil::KingdomType::REPUB:
+			{
+				sf::Color red(255, 102, 102, 185);
+				iter->second->setColour(red);
+				break;
+			}
 			}
 		}
 	}
@@ -283,42 +298,7 @@ namespace VoronoiMap{
 	}
 
 	void VoronoiMap::toggleKingdomDraw(){
-		if(!drawKingdoms){
-			for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
-				switch(iter->second->getOwner()){
-				case KingdomUtil::KingdomType::HUMAN:
-				{
-					sf::Color orange(255, 179, 102);
-					iter->second->setPolyColour(orange);
-					break;
-				}
-				case KingdomUtil::KingdomType::DWARF:
-				{
-					sf::Color blue(102, 163, 255);
-					iter->second->setPolyColour(blue);
-					break;
-				}
-				case KingdomUtil::KingdomType::ELF:
-				{
-					sf::Color green(77, 255, 77);
-					iter->second->setPolyColour(green);
-					break;
-				}
-				case KingdomUtil::KingdomType::REPUB:
-				{
-					sf::Color red(255, 102, 102);
-					iter->second->setPolyColour(red);
-					break;
-				}
-				}
-			}
-			drawKingdoms = true;
-		}else{
-			for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
-				iter->second->reApplyColour();
-			}
-			drawKingdoms = false;
-		}
+		drawKingdoms = !drawKingdoms;
 	}
 	void VoronoiMap::mouseMoved(float x, float y){
 		if(x >= 0 && y >= 0 && x <= mapW && y <= mapH){
