@@ -31,6 +31,7 @@
 
 #include "../../util/lineShape.hpp"
 #include "../../util/FastNoise.h"
+#include "../../util/polygonUtil.hpp"
 
 /*
  * 	Based on code from Amit's Polygon map gen article
@@ -51,8 +52,8 @@ namespace VoronoiMap{
 		};
 
 		VoronoiMap(int numCells, int mapW, int mapH);
+		VoronoiMap(int numCells, int mapW, int mapH, std::deque<sf::Vector2f> outline);
 
-		void generateNewMap(int numCells);
 		void relaxDiagram();
 
 		void mouseMoved(float x, float y);
@@ -120,15 +121,20 @@ namespace VoronoiMap{
 		bool isDrawingKingdoms(){
 			return drawKingdoms;
 		}
-	private:
+		void setLandPoly(std::unique_ptr<sf::ConvexShape> landPoly) {
+			this->landPoly = std::move(landPoly);
+		}
+		void generateNewMap(std::shared_ptr<std::vector<Point2>> points);
 		std::shared_ptr<std::vector<Point2>> generateCellPoints(int numCells);
+		std::shared_ptr<std::vector<Point2>> generatePolyPoints(int numCells, std::deque<sf::Vector2f> outline);
 
+	private:
+		void init();
 		void createGameMap();
 
 		bool insideCircle(float x, float y, float cX, float cY, int r);
 
 		std::shared_ptr<CellCorner> createCorner(sf::Vector2f point);
-
 		std::shared_ptr<LineEdge<Center>> createDelaunayEdge(Edge* e);
 		std::shared_ptr<LineEdge<CellCorner>> createVoronoiEdge(Edge* e);
 
@@ -154,6 +160,8 @@ namespace VoronoiMap{
 
 		std::unique_ptr<VoronoiDiagramGenerator> generator;
 		std::shared_ptr<Diagram> voronoiDiagram;
+
+		std::unique_ptr<sf::ConvexShape> landPoly;
 
 		int mapW, mapH;
 		

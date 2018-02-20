@@ -10,17 +10,26 @@
 namespace VoronoiMap{
 
 	VoronoiMap::VoronoiMap(int numCells, int mapW, int mapH) : mapW(mapW), mapH(mapH){
+		init();
+
+		generateNewMap(generateCellPoints(numCells));
+	}
+	VoronoiMap::VoronoiMap(int numCells, int mapW, int mapH, std::deque<sf::Vector2f> outline) :
+			mapW(mapW), mapH(mapH){
+		init();
+
+//		std::shared_ptr<std::vector<Point2>> points = ;
+//		generateNewMap(points);
+	}
+	void VoronoiMap::init(){
 		std::random_device rd;
 		gen = std::mt19937(rd());
 		xDis = std::uniform_int_distribution<>(0, mapW);
 		yDis = std::uniform_int_distribution<>(0, mapH);
 
 		generator = std::unique_ptr<VoronoiDiagramGenerator>(new VoronoiDiagramGenerator());
-
-		generateNewMap(numCells);
 	}
-	void VoronoiMap::generateNewMap(int numCells){
-		std::shared_ptr<std::vector<Point2>> points = generateCellPoints(numCells);
+	void VoronoiMap::generateNewMap(std::shared_ptr<std::vector<Point2>> points){
 		voronoiDiagram = std::shared_ptr<Diagram>(
 				generator->compute(*points, BoundingBox(0, mapW, mapH, 0))
 				);
@@ -38,6 +47,27 @@ namespace VoronoiMap{
 		voronoiDiagram.reset(relaxedDiagram);
 
 		createGameMap();
+	}
+	std::shared_ptr<std::vector<Point2>> VoronoiMap::generatePolyPoints(int numCells, std::deque<sf::Vector2f> outline){
+		std::shared_ptr<std::vector<Point2>> points = std::make_shared<std::vector<Point2>>();
+
+		Point2 s;
+
+		bool inside = false;
+		for(int i = 0; i < numCells; ++i){
+			inside = false;
+			while(!inside){
+				s.x = xDis(gen);
+				s.y = yDis(gen);
+
+				if(PolygonUtil::isInside(outline, outline.size(), sf::Vector2f(s.x, s.y))){
+					inside = true;
+				}
+			}
+			points->push_back(s);
+		}
+
+		return points;
 	}
 	std::shared_ptr<std::vector<Point2>> VoronoiMap::generateCellPoints(int numCells){
 		std::shared_ptr<std::vector<Point2>> points = std::make_shared<std::vector<Point2>>();
@@ -193,6 +223,10 @@ namespace VoronoiMap{
 			}else{
 				window->draw(*e->getVorLine());
 			}
+		}
+
+		if(landPoly){
+			window->draw(*landPoly);
 		}
 	}
 

@@ -43,6 +43,15 @@ public:
 	void resize(sf::Event& e);
 	void handleInput(sf::Time& delta);
 	void loadResources();
+
+	std::unique_ptr<VoronoiMap::VoronoiMap>& getProvinceVorDia() {
+		return provinceVorDia;
+	}
+
+	std::unique_ptr<VoronoiMap::VoronoiMap>& getTerrainVorDia() {
+		return terrainVorDia;
+	}
+
 private:
 	std::unique_ptr<VoronoiMap::VoronoiMap> terrainVorDia = nullptr;
 	std::unique_ptr<VoronoiMap::VoronoiMap> provinceVorDia = nullptr;

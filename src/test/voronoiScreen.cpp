@@ -51,12 +51,14 @@ void VoronoiScreen::init(){
 	KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, provinceVorDia.get());
 	provinceVorDia->assignKingdomColours();
 
+	KingdomUtil::KingdomUtil::generateKingdomVoronoi(this);
+
 	input.getMap()["gen_diagram"] = thor::Action(sf::Keyboard::F2, thor::Action::PressOnce);
 	input.getActionSys().connect("gen_diagram", std::bind([numSites, this]{
 		terrainVorDia->reset();
 		provinceVorDia->reset();
-		terrainVorDia->generateNewMap(numSites);
-		provinceVorDia->generateNewMap(200);
+		terrainVorDia->generateNewMap(terrainVorDia->generateCellPoints(numSites));
+		provinceVorDia->generateNewMap(provinceVorDia->generateCellPoints(200));
 
 		VoronoiMap::NoisyEdges::getInstance()->generateNoisyEdges(terrainVorDia.get());
 		VoronoiMap::NoisyEdges::getInstance()->generateNoisyPolys(terrainVorDia.get());
@@ -68,6 +70,8 @@ void VoronoiScreen::init(){
 
 		KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, provinceVorDia.get());
 		provinceVorDia->assignKingdomColours();
+
+		KingdomUtil::KingdomUtil::generateKingdomVoronoi(this);
 	}));
 
 	input.getMap()["toggle_kingdoms"] = thor::Action(sf::Keyboard::F3, thor::Action::PressOnce);
