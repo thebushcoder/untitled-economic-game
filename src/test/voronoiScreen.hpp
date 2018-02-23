@@ -48,6 +48,10 @@ public:
 		return provinceVorDia;
 	}
 
+	void setProvinceVorDia(std::unique_ptr<VoronoiMap::VoronoiMap> map){
+		provinceVorDia = std::move(map);
+	}
+
 	std::unique_ptr<VoronoiMap::VoronoiMap>& getTerrainVorDia() {
 		return terrainVorDia;
 	}

@@ -15,10 +15,6 @@ void VoronoiScreen::init(){
 	terrainVorDia = std::unique_ptr<VoronoiMap::VoronoiMap>(
 			new VoronoiMap::VoronoiMap(numSites, w, h));
 
-	provinceVorDia = std::unique_ptr<VoronoiMap::VoronoiMap>(
-			new VoronoiMap::VoronoiMap(200, w, h));
-	provinceVorDia->toggleNoisyEdges();
-
 	VoronoiMap::NoisyEdges::getInstance()->generateNoisyEdges(terrainVorDia.get());
 	VoronoiMap::NoisyEdges::getInstance()->generateNoisyPolys(terrainVorDia.get());
 	VoronoiMap::TerrainGeneration::generateWater(terrainVorDia.get());
@@ -48,17 +44,18 @@ void VoronoiScreen::init(){
 	k.addComponent<ProvincesComponent>();
 	kingdoms[KingdomUtil::KingdomType::REPUB] = k;
 
+	KingdomUtil::KingdomUtil::generateKingdomVoronoi(this);
+	provinceVorDia->toggleNoisyEdges();
+
 	KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, provinceVorDia.get());
 	provinceVorDia->assignKingdomColours();
 
-	KingdomUtil::KingdomUtil::generateKingdomVoronoi(this);
 
 	input.getMap()["gen_diagram"] = thor::Action(sf::Keyboard::F2, thor::Action::PressOnce);
 	input.getActionSys().connect("gen_diagram", std::bind([numSites, this]{
 		terrainVorDia->reset();
 		provinceVorDia->reset();
 		terrainVorDia->generateNewMap(terrainVorDia->generateCellPoints(numSites));
-		provinceVorDia->generateNewMap(provinceVorDia->generateCellPoints(200));
 
 		VoronoiMap::NoisyEdges::getInstance()->generateNoisyEdges(terrainVorDia.get());
 		VoronoiMap::NoisyEdges::getInstance()->generateNoisyPolys(terrainVorDia.get());
@@ -68,10 +65,11 @@ void VoronoiScreen::init(){
 		VoronoiMap::TerrainGeneration::generateMoisture(terrainVorDia.get());
 		VoronoiMap::TerrainGeneration::generateBiomes(terrainVorDia.get());
 
+		KingdomUtil::KingdomUtil::generateKingdomVoronoi(this);
+		provinceVorDia->toggleNoisyEdges();
+
 		KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, provinceVorDia.get());
 		provinceVorDia->assignKingdomColours();
-
-		KingdomUtil::KingdomUtil::generateKingdomVoronoi(this);
 	}));
 
 	input.getMap()["toggle_kingdoms"] = thor::Action(sf::Keyboard::F3, thor::Action::PressOnce);

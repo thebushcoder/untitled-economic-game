@@ -100,12 +100,11 @@ namespace KingdomUtil{
 		sf::ConvexShape* landPoly = new sf::ConvexShape(landOutline.size());
 		landPoly->setFillColor(sf::Color::Magenta);
 
-		printf("\nOutline size: %d\n", landOutline.size());
-
 		// choose edge to start walking from
 		VoronoiMap::CellEdge* c = landOutline[0];
 		sf::Vector2f current = c->getVoronoiEdge()->getPointA()->getPoint();
 		sf::Vector2f nextPoint = c->getVoronoiEdge()->getPointB()->getPoint();
+
 		std::vector<VoronoiMap::CellEdge*> visited;
 		std::deque<sf::Vector2f> orderedOutline;
 
@@ -151,9 +150,11 @@ namespace KingdomUtil{
 			}
 		}
 
+		vorScreen->setProvinceVorDia(std::unique_ptr<VoronoiMap::VoronoiMap>(
+				new VoronoiMap::VoronoiMap(200, vorScreen->getTerrainVorDia()->getMapW(),
+						vorScreen->getTerrainVorDia()->getMapH(), orderedOutline)));
 
-
-		vorScreen->getProvinceVorDia()->setLandPoly(std::unique_ptr<sf::ConvexShape>(std::move(landPoly)));
+//		vorScreen->getProvinceVorDia()->setLandPoly(std::unique_ptr<sf::ConvexShape>(std::move(landPoly)));
 	}
 
 	void KingdomUtil::floodFill(std::queue<VoronoiMap::Center*>& front, anax::Entity e,

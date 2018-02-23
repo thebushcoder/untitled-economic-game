@@ -52,7 +52,7 @@ namespace VoronoiMap{
 		};
 
 		VoronoiMap(int numCells, int mapW, int mapH);
-		VoronoiMap(int numCells, int mapW, int mapH, std::deque<sf::Vector2f> outline);
+		VoronoiMap(int numCells, int mapW, int mapH, std::deque<sf::Vector2f>& outline);
 
 		void relaxDiagram();
 
@@ -125,6 +125,7 @@ namespace VoronoiMap{
 			this->landPoly = std::move(landPoly);
 		}
 		void generateNewMap(std::shared_ptr<std::vector<Point2>> points);
+		void generateNewPolyMap(std::shared_ptr<std::vector<Point2>> points);
 		std::shared_ptr<std::vector<Point2>> generateCellPoints(int numCells);
 		std::shared_ptr<std::vector<Point2>> generatePolyPoints(int numCells, std::deque<sf::Vector2f> outline);
 

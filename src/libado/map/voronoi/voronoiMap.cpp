@@ -12,14 +12,15 @@ namespace VoronoiMap{
 	VoronoiMap::VoronoiMap(int numCells, int mapW, int mapH) : mapW(mapW), mapH(mapH){
 		init();
 
-		generateNewMap(generateCellPoints(numCells));
+		std::shared_ptr<std::vector<Point2>> points = generateCellPoints(numCells);
+		generateNewMap(points);
 	}
-	VoronoiMap::VoronoiMap(int numCells, int mapW, int mapH, std::deque<sf::Vector2f> outline) :
+	VoronoiMap::VoronoiMap(int numCells, int mapW, int mapH, std::deque<sf::Vector2f>& outline) :
 			mapW(mapW), mapH(mapH){
 		init();
 
-//		std::shared_ptr<std::vector<Point2>> points = ;
-//		generateNewMap(points);
+		std::shared_ptr<std::vector<Point2>> points = generatePolyPoints(numCells, outline);
+		generateNewPolyMap(points);
 	}
 	void VoronoiMap::init(){
 		std::random_device rd;
@@ -38,6 +39,13 @@ namespace VoronoiMap{
 		for(int i = 0; i < numRelax; ++i){
 			relaxDiagram();
 		}
+	}
+	void VoronoiMap::generateNewPolyMap(std::shared_ptr<std::vector<Point2>> points){
+		voronoiDiagram = std::shared_ptr<Diagram>(
+			generator->compute(*points, BoundingBox(0, mapW, mapH, 0))
+			);
+
+		createGameMap();
 	}
 	void VoronoiMap::relaxDiagram(){
 		Diagram* relaxedDiagram = generator->relax();
@@ -60,10 +68,10 @@ namespace VoronoiMap{
 				s.x = xDis(gen);
 				s.y = yDis(gen);
 
-				if(PolygonUtil::isInside(outline, outline.size(), sf::Vector2f(s.x, s.y))){
-					inside = true;
-				}
+				inside = PolygonUtil::windingAlgo(sf::Vector2f(s.x, s.y), outline);
 			}
+
+
 			points->push_back(s);
 		}
 

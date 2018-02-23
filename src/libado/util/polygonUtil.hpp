@@ -65,7 +65,8 @@ namespace PolygonUtil{
 	}
 
 	// Returns true if the point p lies inside the polygon[] with n vertices
-	static bool isInside(std::deque<sf::Vector2f> polygon, int n, sf::Vector2f p)
+	// https://www.geeksforgeeks.org/how-to-check-if-a-given-point-lies-inside-a-polygon/
+	static bool isInside(std::deque<sf::Vector2f>& polygon, int n, sf::Vector2f p)
 	{
 		// There must be at least 3 vertices in polygon[]
 		if (n < 3)  return false;
@@ -95,7 +96,81 @@ namespace PolygonUtil{
 		} while (i != 0);
 
 		// Return true if count is odd, false otherwise
-		return count&1;  // Same as (count%2 == 1)
+		return count & 1;  // Same as (count%2 == 1)
+	}
+
+	static int Is_Left(const sf::Vector2f &p0,
+					const sf::Vector2f &p1,
+					const sf::Vector2f &point)
+	{
+		return ((p1.x - p0.x) * (point.y - p0.y) -
+				(point.x - p0.x) * (p1.y - p0.y));
+	}
+
+	// http://forums.codeguru.com/showthread.php?497679-To-check-if-a-point-is-inside-a-polygon
+	static bool windingAlgo(sf::Vector2f p, std::deque<sf::Vector2f>& polygonPoints){
+		// The winding number counter.
+		int winding_number = 0;
+
+		// Loop through all edges of the polygon.
+
+		for (auto i = 0; i < polygonPoints.size(); ++i)             // Edge from point1 to points_list[i+1]
+		{
+			sf::Vector2f point1(polygonPoints[i]);
+			sf::Vector2f point2;
+
+			// Wrap?
+			if (i == (polygonPoints.size() - 1))
+			{
+				point2 = polygonPoints[0];
+			}
+			else
+			{
+				point2 = polygonPoints[i + 1];
+			}
+
+			if (point1.y <= p.y)                                    // start y <= point.y
+			{
+				if (point2.y > p.y)                                 // An upward crossing
+				{
+					if (Is_Left(point1, point2, p) > 0)             // Point left of edge
+					{
+						++winding_number;                               // Have a valid up intersect
+					}
+				}
+			}
+			else
+			{
+				// start y > point.y (no test needed)
+				if (point2.y <= p.y)                                // A downward crossing
+				{
+					if (Is_Left(point1, point2, p) < 0)             // Point right of edge
+					{
+						--winding_number;                               // Have a valid down intersect
+					}
+				}
+			}
+		}
+
+		return (winding_number != 0);
+	}
+
+	// https://www.codeproject.com/Tips/84226/Is-a-Point-inside-a-Polygon
+	static bool pnPoly(std::deque<sf::Vector2f>& polygon, int n, sf::Vector2f p){
+		bool flag = false;
+
+		int i, j;
+		for (i = 0, j = n - 1; i < n; j = i++) {
+			sf::Vector2f a = polygon[i];
+			sf::Vector2f b = polygon[j];
+			if ( ((a.y > p.y) != (b.y > p.y)) &&
+					(p.x < (b.x - a.x) * (p.y - a.y) /
+							(b.y - a.y) + a.x) ){
+			   flag = !flag;
+			}
+		}
+
+		return flag;
 	}
 
 }
