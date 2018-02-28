@@ -32,7 +32,7 @@ namespace VoronoiMap{
 	}
 	void VoronoiMap::generateNewMap(std::shared_ptr<std::vector<Point2>> points){
 		voronoiDiagram = std::shared_ptr<Diagram>(
-				generator->compute(*points, BoundingBox(0, mapW, mapH, 0))
+				std::move(generator->compute(*points, BoundingBox(0, mapW, mapH, 0)))
 				);
 
 		int numRelax = 3;
@@ -42,7 +42,7 @@ namespace VoronoiMap{
 	}
 	void VoronoiMap::generateNewPolyMap(std::shared_ptr<std::vector<Point2>> points){
 		voronoiDiagram = std::shared_ptr<Diagram>(
-			generator->compute(*points, BoundingBox(0, mapW, mapH, 0))
+			std::move(generator->compute(*points, BoundingBox(0, mapW, mapH, 0)))
 			);
 
 		createGameMap();
@@ -340,7 +340,42 @@ namespace VoronoiMap{
 	}
 
 	void VoronoiMap::toggleKingdomDraw(){
-		drawKingdoms = !drawKingdoms;
+		if(!drawKingdoms){
+			for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
+				switch(iter->second->getOwner()){
+				case KingdomUtil::KingdomType::HUMAN:
+				{
+					sf::Color orange(255, 179, 102, 185);
+					iter->second->setPolyColour(orange);
+					break;
+				}
+				case KingdomUtil::KingdomType::DWARF:
+				{
+					sf::Color blue(102, 163, 255, 185);
+					iter->second->setPolyColour(blue);
+					break;
+				}
+				case KingdomUtil::KingdomType::ELF:
+				{
+					sf::Color green(77, 255, 77, 185);
+					iter->second->setPolyColour(green);
+					break;
+				}
+				case KingdomUtil::KingdomType::REPUB:
+				{
+					sf::Color red(255, 102, 102, 185);
+					iter->second->setPolyColour(red);
+					break;
+				}
+				}
+			}
+			drawKingdoms = true;
+		}else{
+			for(auto iter = allCenters.begin(); iter != allCenters.end(); ++iter){
+				iter->second->reApplyColour();
+			}
+			drawKingdoms = false;
+		}
 	}
 	void VoronoiMap::mouseMoved(float x, float y){
 		if(x >= 0 && y >= 0 && x <= mapW && y <= mapH){

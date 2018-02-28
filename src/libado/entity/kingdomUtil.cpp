@@ -10,19 +10,22 @@
 
 namespace KingdomUtil{
 	void KingdomUtil::genKingdomArea(std::map<KingdomType, anax::Entity>& kingdomList,
-			VoronoiMap::VoronoiMap* map){
-		int provCount = map->getAllCenters().size();
+			VoronoiScreen* vorScreen){
+
+		std::unique_ptr<VoronoiMap::VoronoiMap> provVorDia = generateKingdomVoronoi(vorScreen);
+
+		int provCount = provVorDia->getAllCenters().size();
 
 		sf::Vector2f startDwarf(20, 20);
 		float dwarfArea = 0.20;
 		int dwarfProvs = provCount * dwarfArea;
-		sf::Vector2f startElf(20, map->getMapH() - 20);
+		sf::Vector2f startElf(20, provVorDia->getMapH() - 20);
 		float elfArea = 0.25;
 		int elfProvs = provCount * elfArea;
-		sf::Vector2f startRepub(map->getMapW() - 20, 20);
+		sf::Vector2f startRepub(provVorDia->getMapW() - 20, 20);
 		float repubArea = 0.15;
 		int repubProvs = provCount * repubArea;
-		sf::Vector2f startHuman(map->getMapW() - 20, map->getMapH() - 20);
+		sf::Vector2f startHuman(provVorDia->getMapW() - 20, provVorDia->getMapH() - 20);
 		float humanArea = 0.40;
 		int humanProvs = provCount * humanArea;
 
@@ -31,25 +34,24 @@ namespace KingdomUtil{
 			p.list.clear();
 		}
 
-		printf("Dwarf kingdom size: %d\n", dwarfProvs);
-		printf("Elf kingdom size: %d\n", elfProvs);
-		printf("Repub kingdom size: %d\n", repubProvs);
-		printf("Human kingdom size: %d\n\n", humanProvs);
-
 		std::queue<VoronoiMap::Center*> humanFront;
-		humanFront.push(map->getClosestCell(startHuman));
+		humanFront.push(provVorDia->getClosestCell(startHuman));
 		std::queue<VoronoiMap::Center*> elfFront;
-		elfFront.push(map->getClosestCell(startElf));
+		elfFront.push(provVorDia->getClosestCell(startElf));
 		std::queue<VoronoiMap::Center*> dwarfFront;
-		dwarfFront.push(map->getClosestCell(startDwarf));
+		dwarfFront.push(provVorDia->getClosestCell(startDwarf));
 		std::queue<VoronoiMap::Center*> repubFront;
-		repubFront.push(map->getClosestCell(startRepub));
+		repubFront.push(provVorDia->getClosestCell(startRepub));
 
 		do{
-			KingdomUtil::floodFill(humanFront, kingdomList[KingdomType::HUMAN], map, humanProvs);
-			KingdomUtil::floodFill(elfFront, kingdomList[KingdomType::ELF], map, elfProvs);
-			KingdomUtil::floodFill(dwarfFront, kingdomList[KingdomType::DWARF], map, dwarfProvs);
-			KingdomUtil::floodFill(repubFront, kingdomList[KingdomType::REPUB], map, repubProvs);
+			KingdomUtil::floodFill(humanFront, kingdomList[KingdomType::HUMAN],
+					provVorDia.get(), humanProvs);
+			KingdomUtil::floodFill(elfFront, kingdomList[KingdomType::ELF],
+					provVorDia.get(), elfProvs);
+			KingdomUtil::floodFill(dwarfFront, kingdomList[KingdomType::DWARF],
+					provVorDia.get(), dwarfProvs);
+			KingdomUtil::floodFill(repubFront, kingdomList[KingdomType::REPUB],
+					provVorDia.get(), repubProvs);
 		}while(!humanFront.empty() || !elfFront.empty() ||
 				!dwarfFront.empty() || !repubFront.empty());
 
@@ -63,7 +65,7 @@ namespace KingdomUtil{
 		// sometimes flood fill doesnt fill every cell, roughly 1-2. set unfilled cells
 		// to their first neighbour's owner/kingdom. change this?
 		if(provTotal < provCount){
-			for(auto c : map->getAllCenters()){
+			for(auto c : provVorDia->getAllCenters()){
 				if(c.second->getOwner() == KingdomType::NONE){
 					c.second->setOwner(c.second->getNeighbours()[0]->getOwner());
 					break;
@@ -73,14 +75,37 @@ namespace KingdomUtil{
 
 		for(auto e : kingdomList){
 			ProvincesComponent& p = e.second.getComponent<ProvincesComponent>();
-			KingdomComponent& k = e.second.getComponent<KingdomComponent>();
 
-			printf("%s province number: %d\n", TypetoString(k.getType()).c_str(),
-					p.list.size());
+			p.list.clear();
+		}
+
+		markKingdomArea(kingdomList, provVorDia.get(), vorScreen);
+
+	}
+
+	void KingdomUtil::markKingdomArea(std::map<KingdomType, anax::Entity>& kingdomList,
+			VoronoiMap::VoronoiMap* provVorDiam, VoronoiScreen* vorScreen){
+		for(auto iterA = vorScreen->getTerrainVorDia()->getAllCenters().begin();
+			iterA != vorScreen->getTerrainVorDia()->getAllCenters().end(); ++iterA){
+			if(!iterA->second->isOcean()){
+				for(auto iterB = provVorDiam->getAllCenters().begin();
+						iterB != provVorDiam->getAllCenters().end(); ++iterB){
+					std::deque<sf::Vector2f> polyPoints;
+					for(int i = 0; i < iterB->second->getLinePoly().getPointCount(); ++i){
+						polyPoints.push_back(iterB->second->getLinePoly().getPoint(i));
+					}
+					if(PolygonUtil::windingAlgo(iterA->second->getPoint(), polyPoints)){
+						ProvincesComponent& p = kingdomList[iterB->second->getOwner()].
+								getComponent<ProvincesComponent>();
+						p.list.push_back(iterA->second.get());
+						iterA->second->setOwner(iterB->second->getOwner());
+					}
+				}
+			}
 		}
 	}
 
-	void KingdomUtil::generateKingdomVoronoi(VoronoiScreen* vorScreen){
+	std::unique_ptr<VoronoiMap::VoronoiMap> KingdomUtil::generateKingdomVoronoi(VoronoiScreen* vorScreen){
 		std::vector<VoronoiMap::CellEdge*> landOutline;
 
 		// get edges with ocean-land borders
@@ -150,11 +175,23 @@ namespace KingdomUtil{
 			}
 		}
 
-		vorScreen->setProvinceVorDia(std::unique_ptr<VoronoiMap::VoronoiMap>(
+		return std::unique_ptr<VoronoiMap::VoronoiMap>(
 				new VoronoiMap::VoronoiMap(200, vorScreen->getTerrainVorDia()->getMapW(),
-						vorScreen->getTerrainVorDia()->getMapH(), orderedOutline)));
+						vorScreen->getTerrainVorDia()->getMapH(), orderedOutline));
 
 //		vorScreen->getProvinceVorDia()->setLandPoly(std::unique_ptr<sf::ConvexShape>(std::move(landPoly)));
+	}
+
+	void KingdomUtil::placeSettlements(VoronoiScreen* vorScreen){
+		// mark best tile
+		// loop tiles in a kingdoms ProvenceComponent's list
+		// calc weight for tile
+		// if current tile's weight > best tile, best tile == current
+
+		// ocean tile has 1-2(3?) ocean neighbours
+		// ocean tile has no null delaunay
+
+
 	}
 
 	void KingdomUtil::floodFill(std::queue<VoronoiMap::Center*>& front, anax::Entity e,

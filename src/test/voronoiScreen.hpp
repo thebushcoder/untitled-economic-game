@@ -44,21 +44,12 @@ public:
 	void handleInput(sf::Time& delta);
 	void loadResources();
 
-	std::unique_ptr<VoronoiMap::VoronoiMap>& getProvinceVorDia() {
-		return provinceVorDia;
-	}
-
-	void setProvinceVorDia(std::unique_ptr<VoronoiMap::VoronoiMap> map){
-		provinceVorDia = std::move(map);
-	}
-
 	std::unique_ptr<VoronoiMap::VoronoiMap>& getTerrainVorDia() {
 		return terrainVorDia;
 	}
 
 private:
 	std::unique_ptr<VoronoiMap::VoronoiMap> terrainVorDia = nullptr;
-	std::unique_ptr<VoronoiMap::VoronoiMap> provinceVorDia = nullptr;
 
 	std::shared_ptr<anax::World> entityWorld;
 	std::map<KingdomUtil::KingdomType, anax::Entity> kingdoms;

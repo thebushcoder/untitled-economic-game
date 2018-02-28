@@ -23,9 +23,11 @@ namespace KingdomUtil{
 	struct KingdomUtil{
 
 		static void genKingdomArea(std::map<KingdomType, anax::Entity>& kingdomList,
-				VoronoiMap::VoronoiMap* map);
-
-		static void generateKingdomVoronoi(VoronoiScreen* vorScreen);
+				VoronoiScreen* vorScreen);
+		static void markKingdomArea(std::map<KingdomType, anax::Entity>& kingdomList,
+				VoronoiMap::VoronoiMap* provVorDiam, VoronoiScreen* vorScreen);
+		static void placeSettlements(VoronoiScreen* vorScreen);
+		static std::unique_ptr<VoronoiMap::VoronoiMap> generateKingdomVoronoi(VoronoiScreen* vorScreen);
 
 		static void floodFill(std::queue<VoronoiMap::Center*>& front, anax::Entity e,
 				VoronoiMap::VoronoiMap* map, int factionProvs);

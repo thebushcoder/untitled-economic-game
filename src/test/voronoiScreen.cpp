@@ -44,17 +44,12 @@ void VoronoiScreen::init(){
 	k.addComponent<ProvincesComponent>();
 	kingdoms[KingdomUtil::KingdomType::REPUB] = k;
 
-	KingdomUtil::KingdomUtil::generateKingdomVoronoi(this);
-	provinceVorDia->toggleNoisyEdges();
-
-	KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, provinceVorDia.get());
-	provinceVorDia->assignKingdomColours();
-
+	KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, this);
+//	terrainVorDia->assignKingdomColours();
 
 	input.getMap()["gen_diagram"] = thor::Action(sf::Keyboard::F2, thor::Action::PressOnce);
 	input.getActionSys().connect("gen_diagram", std::bind([numSites, this]{
 		terrainVorDia->reset();
-		provinceVorDia->reset();
 		terrainVorDia->generateNewMap(terrainVorDia->generateCellPoints(numSites));
 
 		VoronoiMap::NoisyEdges::getInstance()->generateNoisyEdges(terrainVorDia.get());
@@ -65,16 +60,13 @@ void VoronoiScreen::init(){
 		VoronoiMap::TerrainGeneration::generateMoisture(terrainVorDia.get());
 		VoronoiMap::TerrainGeneration::generateBiomes(terrainVorDia.get());
 
-		KingdomUtil::KingdomUtil::generateKingdomVoronoi(this);
-		provinceVorDia->toggleNoisyEdges();
-
-		KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, provinceVorDia.get());
-		provinceVorDia->assignKingdomColours();
+		KingdomUtil::KingdomUtil::genKingdomArea(kingdoms, this);
+//		terrainVorDia->assignKingdomColours();
 	}));
 
 	input.getMap()["toggle_kingdoms"] = thor::Action(sf::Keyboard::F3, thor::Action::PressOnce);
 	input.getActionSys().connect("toggle_kingdoms", std::bind([this]{
-		provinceVorDia->toggleKingdomDraw();
+		terrainVorDia->toggleKingdomDraw();
 	}));
 
 	input.getMap()["toggle_elevation"] = thor::Action(sf::Keyboard::F4, thor::Action::PressOnce);
@@ -96,7 +88,7 @@ void VoronoiScreen::init(){
 	input.getActionSys().connect("mouse_moved", std::bind([this]{
 		sf::Vector2i p = sf::Mouse::getPosition(*manager->getWindow());
 
-		provinceVorDia->mouseMoved(p.x, p.y);
+		terrainVorDia->mouseMoved(p.x, p.y);
 	}));
 
 	input.getMap()["mouse_clicked"] = thor::Action(sf::Mouse::Left, thor::Action::PressOnce);
@@ -136,9 +128,6 @@ void VoronoiScreen::render(sf::Time& delta){
 
 
 	terrainVorDia->draw(manager->getWindow());
-	if(provinceVorDia->isDrawingKingdoms()){
-		provinceVorDia->draw(manager->getWindow());
-	}
 
 	manager->getGui()->draw();
 
